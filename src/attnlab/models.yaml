@@ -1,0 +1,93 @@
+# Model registry — data, not code. Adding a model here is the only change
+# needed to add it to the app; nothing in Python should hardcode a model
+# name outside of tests.
+#
+# tier:
+#   baked    - pre-downloaded into the deploy image; instant on cold start
+#   lazy     - pulled from the Hub on first request
+#   disabled - too large / gated / not ready; shown greyed-out with `reason`
+#
+# est_ram_mb: for the first four models below, this is now a MEASURED
+# number — Mode B (Docker, --cpus=2 --memory=6g, isolated subprocess per
+# model), from bench_results/RESULTS.md, 2026-09-19. It is
+# `net_rss_delta_mb`: resident memory for that model loaded FIRST in a
+# fresh process, which includes a one-time ~500-900MB transformers/
+# tokenizers import cost (see docs/03-decisions.md D8) on top of the
+# model's own weights. Deliberately conservative for LRU admission
+# (D8's amendment) — safer to overestimate than to repeat the OOM this
+# number's absence caused during Stage 0a benchmarking.
+
+- id: attn-only-2l-demo
+  label: "Attn-Only 2L (ARENA 1.2)"
+  tl_name: attn-only-2l-demo
+  tier: baked
+  max_seq: 512
+  languages: [en]
+  est_ram_mb: 757
+  n_layers: 2
+  n_heads: 8
+  d_model: 512
+  n_params: 54159461
+  blurb: "Two attention layers, no MLPs. The ARENA 1.2 induction-heads workhorse."
+
+- id: gpt2-small
+  label: "GPT-2 Small"
+  tl_name: gpt2-small
+  tier: baked
+  max_seq: 512
+  languages: [en]
+  est_ram_mb: 1671
+  n_layers: 12
+  n_heads: 12
+  d_model: 768
+  n_params: 163049041
+  blurb: "124M params, 12 layers. The default model for most ARENA exercises."
+
+- id: pythia-160m
+  label: "Pythia 160M"
+  tl_name: pythia-160m
+  tier: baked
+  max_seq: 512
+  languages: [en]
+  est_ram_mb: 1641
+  n_layers: 12
+  n_heads: 12
+  d_model: 768
+  n_params: 162334848
+  blurb: "EleutherAI's Pythia suite, trained on the Pile with public checkpoints."
+
+- id: gpt2-medium
+  label: "GPT-2 Medium"
+  tl_name: gpt2-medium
+  tier: lazy
+  max_seq: 512
+  languages: [en]
+  est_ram_mb: 3782
+  n_layers: 24
+  n_heads: 16
+  d_model: 1024
+  n_params: 406236241
+  blurb: "355M params, 24 layers. Larger induction/composition structure to explore."
+
+# bloom-560m: NOT Mode-B-verified. Its resident weight size alone
+# (~6.2GB, from a native/MPS isolated measurement) exceeds this dev
+# machine's real local Docker ceiling (6GB — Docker Desktop's VM here is
+# fixed at 7.7GB total, a systemwide setting left unchanged by choice;
+# see docs/03-decisions.md D1 amendment). tier stays `lazy` because that
+# is a PRODUCTION decision against the real deploy target's RAM, which
+# this dev machine cannot decide — but do not trust it in an actual
+# deployment until confirmed on a bigger box. Qwen2.5-0.5B (see
+# docs/PLAN.md Stage 3) is the safer default multilingual candidate
+# until then.
+- id: bloom-560m
+  label: "BLOOM 560M"
+  tl_name: bloom-560m
+  tier: lazy
+  max_seq: 512
+  languages: [en, fr, es, zh, ar, hi, pt, vi, "and 38 more"]
+  est_ram_mb: 6250  # native/MPS isolated measurement, NOT Mode B — see comment above
+  n_layers: 24
+  n_heads: 16
+  d_model: 1024
+  n_params: 818363392
+  blurb: "46-language multilingual model. Used to probe cross-lingual tokenization and induction."

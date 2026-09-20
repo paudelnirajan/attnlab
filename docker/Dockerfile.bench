@@ -1,0 +1,38 @@
+# Stage 0a benchmark image — the container that produces the numbers we
+# actually trust (docs/PLAN.md > "Two-mode development": Mode B is truth,
+# Mode A/MPS is for iteration speed only).
+#
+# Built and run WITHOUT --platform, so on Apple Silicon this is a native
+# linux/arm64 image — no Rosetta emulation. Memory figures transfer to an
+# x86_64 deploy target; latency measured under emulation would not.
+FROM python:3.11-slim
+
+# Set BEFORE any Python/torch code runs. --cpus=2 (set at `docker run`
+# time, not here) is a CFS quota, not CPU affinity: torch still sees the
+# host's full core count via os.cpu_count() unless told otherwise, and
+# will spawn that many OMP threads, which then thrash against 2 cores'
+# worth of scheduler quota. settings.py enforces this at the Python level
+# too (torch.set_num_threads); setting it here as well covers any
+# C-level thread pool that reads the env var before Python's import of
+# attnlab.settings runs.
+ENV OMP_NUM_THREADS=2 \
+    MKL_NUM_THREADS=2 \
+    MI_DEVICE=cpu \
+    MI_THREADS=2 \
+    MI_RAM_BUDGET_GB=6 \
+    PYTHONUNBUFFERED=1 \
+    HF_HOME=/hf-cache
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir uv==0.10.0
+
+# Copy dependency files first so the (slow, ~2-3GB) dependency install
+# layer is cached across code-only changes.
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project
+
+COPY src ./src
+RUN uv sync --frozen
+
+ENTRYPOINT ["uv", "run", "python", "-m", "attnlab.bench"]
