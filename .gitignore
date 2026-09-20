@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node / frontend build artifacts
+web/node_modules/
+web/dist/
+web/.screenshots/
+
+# OS
+.DS_Store
+
+# Local, per-machine Claude Code settings (not shared team config)
+.claude/settings.local.json
