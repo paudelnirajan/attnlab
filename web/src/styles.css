@@ -1,0 +1,1244 @@
+/* ============================================================================
+   attnlab — design tokens + component layer
+   ----------------------------------------------------------------------------
+   Everything visual lives here. Components carry class names and only ever set
+   an inline style for a value that is genuinely data-driven (a computed
+   attention tint, a percentage offset). That split is deliberate: it keeps the
+   spacing/type/colour scale in one reviewable place instead of re-deciding
+   "is this 4px or 6px?" in twelve components.
+
+   The palette block is the dataviz skill's validated reference instance
+   (references/palette.md) and is NOT hand-tuned here. Dark values are declared
+   under BOTH prefers-color-scheme (OS setting) and [data-theme="dark"] (the
+   explicit toggle in the top bar), with the media query guarded by
+   :not([data-theme="light"]) so an explicit light stamp always beats OS dark.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* -- palette (dataviz reference instance; do not hand-edit) -------------- */
+  --surface-1: #fcfcfb;
+  --page-plane: #f9f9f7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --gridline: #e1e0d9;
+  --baseline: #c3c2b7;
+  --border-hairline: rgba(11, 11, 11, 0.1);
+  --series-blue: #2a78d6;
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+
+  /* -- derived UI surfaces ------------------------------------------------ */
+  --surface-2: #f3f3f0;
+  --surface-raised: #ffffff;
+  /* colour the causal-masked (src > dest) half of a heatmap so the matrix
+     reads as a triangle instead of a solid block of ramp-minimum. Read by
+     render/heatmap.ts, which is why it must stay a plain 6-digit hex. */
+  --heat-mask: #f3f3f0;
+
+  --accent: var(--series-blue);
+  --accent-ink: #ffffff;
+  --accent-soft: color-mix(in oklab, var(--series-blue) 12%, var(--surface-1));
+  --accent-line: color-mix(in oklab, var(--series-blue) 45%, var(--surface-1));
+  --crosshair: #d03b3b;
+
+  /* -- spacing scale (4px base) ------------------------------------------- */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+
+  /* -- radii -------------------------------------------------------------- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+
+  /* -- type --------------------------------------------------------------- */
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --t-xs: 11px;
+  --t-sm: 12px;
+  --t-md: 13px;
+  --t-lg: 15px;
+  --t-xl: 19px;
+
+  /* -- elevation ---------------------------------------------------------- */
+  --shadow-1: 0 1px 2px rgba(11, 11, 11, 0.05);
+  --shadow-2: 0 8px 28px rgba(11, 11, 11, 0.14), 0 2px 6px rgba(11, 11, 11, 0.08);
+
+  --control-h: 32px;
+  --topbar-h: 52px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page-plane: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --border-hairline: rgba(255, 255, 255, 0.1);
+    --series-blue: #3987e5;
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+    --status-critical: #e66767;
+
+    --surface-2: #232322;
+    --surface-raised: #232322;
+    --heat-mask: #141413;
+    --accent-ink: #ffffff;
+    --crosshair: #ffd166;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 10px 34px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-1: #1a1a19;
+  --page-plane: #0d0d0d;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --gridline: #2c2c2a;
+  --baseline: #383835;
+  --border-hairline: rgba(255, 255, 255, 0.1);
+  --series-blue: #3987e5;
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #e66767;
+
+  --surface-2: #232322;
+  --surface-raised: #232322;
+  --heat-mask: #141413;
+  --accent-ink: #ffffff;
+  --crosshair: #ffd166;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 10px 34px rgba(0, 0, 0, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------------------------------------------------------------- reset -- */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--t-md);
+  line-height: 1.5;
+  background: var(--page-plane);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+h1,
+h2,
+h3,
+p,
+dl,
+dd,
+ol,
+ul {
+  margin: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ------------------------------------------------------------ utilities -- */
+
+.muted {
+  color: var(--text-muted);
+}
+.secondary {
+  color: var(--text-secondary);
+}
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.hairline {
+  border: 1px solid var(--border-hairline);
+}
+.nowrap {
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- shell -- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: 0 var(--s4);
+  background: color-mix(in oklab, var(--surface-1) 88%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.topbar__brand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  font-size: var(--t-lg);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.topbar__brand small {
+  font-size: var(--t-xs);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.topbar__spacer,
+.spacer {
+  flex: 1;
+}
+
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--s5) var(--s4) var(--s7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+/* Two-column workspace: head grid on the left, the expanded head sticky on
+   the right so opening a head never scrolls the grid out of view. Collapses
+   to one column below 1080px. */
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
+  gap: var(--s4);
+  align-items: start;
+}
+
+.workspace--solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace__aside {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--s4));
+}
+
+.setup {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: var(--s4);
+  align-items: start;
+}
+
+@media (max-width: 1080px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace__aside {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .setup {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .page {
+    padding: var(--s4) var(--s3) var(--s6);
+  }
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    padding: 0 var(--s3);
+    gap: var(--s1);
+  }
+  .topbar__brand small,
+  .card__hint {
+    display: none;
+  }
+  .headgrid {
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  }
+}
+
+/* ----------------------------------------------------------------- card -- */
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-1);
+}
+
+.card__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  border-bottom: 1px solid var(--border-hairline);
+  min-height: 44px;
+}
+
+.card__title {
+  font-size: var(--t-md);
+  font-weight: 620;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+
+.card__hint {
+  font-size: var(--t-sm);
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.card__body {
+  padding: var(--s4);
+}
+
+.card__body--tight {
+  padding: var(--s3);
+}
+
+.card__foot {
+  padding: var(--s2) var(--s4) var(--s3);
+  border-top: 1px solid var(--border-hairline);
+  font-size: var(--t-sm);
+  color: var(--text-muted);
+}
+
+/* Stale-while-revalidate: the previous result stays on screen, dimmed, while
+   the next one is in flight. Nulling it out made the whole page flash empty
+   on every keystroke. */
+.is-stale {
+  opacity: 0.55;
+  transition: opacity 160ms ease-out;
+}
+
+/* -------------------------------------------------------------- controls -- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s1);
+  height: var(--control-h);
+  padding: 0 var(--s3);
+  border: 1px solid var(--baseline);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-size: var(--t-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 100ms ease-out, border-color 100ms ease-out;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+.btn--sm {
+  height: 26px;
+  padding: 0 var(--s2);
+  font-size: var(--t-sm);
+}
+
+.btn--icon {
+  width: var(--control-h);
+  padding: 0;
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--accent) 86%, black);
+}
+
+/* Segmented control — the direction toggle and anything else with 2-3
+   mutually exclusive options. */
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-sm);
+}
+
+.segmented__opt {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--t-sm);
+  padding: var(--s1) var(--s3);
+  height: 26px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 100ms ease-out, color 100ms ease-out;
+}
+
+.segmented__opt:hover {
+  color: var(--text-primary);
+}
+
+.segmented__opt[aria-pressed="true"] {
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-1);
+}
+
+/* form fields */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+
+.label {
+  font-size: var(--t-sm);
+  font-weight: 560;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+}
+
+.label__hint {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: var(--t-xs);
+}
+
+.select,
+.textarea {
+  width: 100%;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  border: 1px solid var(--baseline);
+  border-radius: var(--r-sm);
+  padding: 0 var(--s2);
+  transition: border-color 100ms ease-out;
+}
+
+.select {
+  height: var(--control-h);
+  appearance: none;
+  padding-right: var(--s5);
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 15px) calc(50% + 1px), calc(100% - 10px) calc(50% + 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.textarea {
+  padding: var(--s2);
+  font-size: var(--t-md);
+  line-height: 1.55;
+  resize: vertical;
+  min-height: 78px;
+}
+
+.select:hover,
+.textarea:hover {
+  border-color: var(--text-muted);
+}
+
+.is-invalid {
+  border-color: var(--status-critical) !important;
+}
+
+/* ---------------------------------------------------------------- pills -- */
+
+.pillrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+}
+
+.pill {
+  height: 28px;
+  min-width: 36px;
+  padding: 0 var(--s2);
+  border: 1px solid var(--baseline);
+  border-radius: var(--r-sm);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  cursor: pointer;
+  transition: background 100ms ease-out, color 100ms ease-out, border-color 100ms ease-out;
+}
+
+.pill:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+.pill[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  height: 20px;
+  padding: 0 var(--s2);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border-hairline);
+  font-size: var(--t-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.badge--good {
+  color: var(--status-good);
+  border-color: color-mix(in oklab, var(--status-good) 40%, transparent);
+}
+.badge--warn {
+  color: var(--status-serious);
+  border-color: color-mix(in oklab, var(--status-serious) 40%, transparent);
+}
+
+/* -------------------------------------------------------------- tokens --- */
+
+.chipstrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  max-height: 168px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.chip {
+  appearance: none;
+  display: inline-block;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 2px 5px;
+  font-family: var(--font-mono);
+  font-size: var(--t-md);
+  line-height: 1.35;
+  cursor: pointer;
+  background: var(--surface-2);
+  color: var(--text-primary);
+  white-space: pre;
+  transition: box-shadow 80ms ease-out;
+}
+
+.chip:hover {
+  box-shadow: 0 0 0 2px var(--accent-line);
+}
+
+/* the token whose row/column is currently driving everything */
+.chip--anchor {
+  box-shadow: 0 0 0 2px var(--accent);
+  font-weight: 700;
+}
+
+/* pinned by click rather than transient hover */
+.chip--pinned {
+  border-color: var(--accent);
+  border-style: dashed;
+}
+
+/* byte-fallback fragment: the tokenizer split a character mid-UTF-8 */
+.chip--bytefallback {
+  border-bottom: 2px dotted var(--status-warning);
+}
+
+/* positions the causal mask makes unreachable in the current direction */
+.chip--masked {
+  opacity: 0.32;
+}
+
+/* ------------------------------------------------------------- heatmap --- */
+
+.pixel-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: block;
+  background: var(--heat-mask);
+}
+
+/* head grid */
+.headgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: var(--s3);
+}
+
+.tile {
+  appearance: none;
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 100ms ease-out, transform 100ms ease-out;
+}
+
+.tile:hover {
+  border-color: var(--accent-line);
+}
+
+.tile[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.tile__canvas {
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+}
+
+.tile__label {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  line-height: 1.4;
+  padding: 0 3px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--surface-1) 78%, transparent);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+/* the hover-linked row (dest->src) or column (src->dest) band */
+.tile__band {
+  position: absolute;
+  background: var(--crosshair);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* detail heatmap with axis gutters:
+     col 1 = y axis title, col 2 = y tick labels, col 3 = plot
+     row 1 = x axis title, row 2 = x tick labels, row 3 = plot */
+.heat {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.heat__corner {
+  grid-column: 1 / span 2;
+  grid-row: 1 / span 2;
+}
+
+.heat__xtitle {
+  grid-column: 3;
+  grid-row: 1;
+  font-size: var(--t-xs);
+  color: var(--text-muted);
+  padding-bottom: 2px;
+}
+
+.heat__xticks {
+  grid-column: 3;
+  grid-row: 2;
+  display: grid;
+  align-items: end;
+  height: 58px;
+  overflow: hidden;
+  padding-bottom: 3px;
+}
+
+.heat__xtick {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  justify-self: center;
+  max-height: 100%;
+}
+
+.heat__ytitle {
+  grid-column: 1;
+  grid-row: 3;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: var(--t-xs);
+  color: var(--text-muted);
+  padding-right: 3px;
+  text-align: center;
+}
+
+/* The y ticks are absolutely positioned rather than laid out as grid rows.
+   As rows they could not shrink below their own line-height, so a long prompt
+   made this column (seq x ~11px) taller than the canvas beside it, stretched
+   the grid row, and left every percentage-positioned overlay in .heat__plot
+   pointing past the bottom of the image. Now they contribute no height at all
+   and the row is sized purely by the canvas. */
+.heat__yticks {
+  grid-column: 2;
+  grid-row: 3;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.heat__ytick {
+  position: absolute;
+  right: var(--s1);
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.heat__tick--on {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.heat__plot {
+  grid-column: 3;
+  grid-row: 3;
+  position: relative;
+  min-width: 0;
+}
+
+.heat__canvas {
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+  cursor: crosshair;
+}
+
+.heat__plot--framed {
+  outline: 1px solid var(--border-hairline);
+  border-radius: 4px;
+}
+
+.heat__rule {
+  position: absolute;
+  background: var(--crosshair);
+  pointer-events: none;
+}
+
+.heat__rule--h {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+
+.heat__rule--v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+/* The band marking the linked row/column. An outline rather than a wash: a
+   translucent fill over the exact row you are trying to read shifts every
+   colour in it, which defeats the point of the colour scale. */
+.heat__band {
+  position: absolute;
+  border: 2px solid var(--crosshair);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 30;
+  pointer-events: none;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-2);
+  padding: var(--s2) var(--s3);
+  font-size: var(--t-sm);
+  line-height: 1.45;
+  max-width: 260px;
+}
+
+.tooltip__val {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* colorbar legend for the sequential ramp */
+.colorbar {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 160px;
+}
+
+.colorbar__ramp {
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid var(--border-hairline);
+}
+
+.colorbar__ticks {
+  position: relative;
+  height: 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.colorbar__tick {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- readouts -- */
+
+.statlist {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  row-gap: var(--s1);
+  column-gap: var(--s4);
+  margin: 0;
+}
+
+.statlist dt {
+  font-size: var(--t-md);
+  color: var(--text-secondary);
+  min-width: 0;
+}
+
+.statlist dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-md);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ranked list with an inline magnitude bar — the top-k attended tokens */
+.ranked {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ranked__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s2);
+  padding: 3px var(--s2);
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: default;
+}
+
+.ranked__bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent-soft);
+  pointer-events: none;
+}
+
+.ranked__label,
+.ranked__value {
+  position: relative;
+  font-family: var(--font-mono);
+  font-size: var(--t-md);
+}
+
+.ranked__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+
+.ranked__value {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.ranked__pos {
+  color: var(--text-muted);
+  font-size: var(--t-xs);
+}
+
+/* ------------------------------------------------------------- banners --- */
+
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-md);
+  border: 1px solid;
+  font-size: var(--t-md);
+}
+
+.banner--error {
+  color: var(--status-critical);
+  border-color: color-mix(in oklab, var(--status-critical) 45%, transparent);
+  background: color-mix(in oklab, var(--status-critical) 8%, var(--surface-1));
+}
+
+.banner--info {
+  color: var(--text-secondary);
+  border-color: var(--border-hairline);
+  background: var(--surface-1);
+}
+
+.empty {
+  padding: var(--s6) var(--s4);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--t-md);
+}
+
+/* skeleton placeholders keep layout height stable while loading */
+.skeleton {
+  border-radius: var(--r-sm);
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--gridline) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.3s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--baseline);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 720ms linear infinite;
+  flex: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --------------------------------------------------------------- modal --- */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s4);
+  background: rgba(11, 11, 11, 0.45);
+  backdrop-filter: blur(3px);
+  animation: fade-in 120ms ease-out;
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  max-height: min(78vh, 640px);
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-2);
+  animation: modal-rise 140ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.modal--wide {
+  max-width: 620px;
+}
+
+.modal__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s4) var(--s4) var(--s3);
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.modal__title {
+  font-size: var(--t-lg);
+  font-weight: 640;
+  margin: 0;
+  flex: 1;
+}
+
+/* the body scrolls, the header/footer stay put — a long modal must never
+   push its own close button off-screen */
+.modal__body {
+  padding: var(--s4);
+  overflow-y: auto;
+  font-size: var(--t-md);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  background:
+    linear-gradient(var(--surface-1) 30%, transparent) top / 100% 20px no-repeat local,
+    linear-gradient(transparent, var(--surface-1) 70%) bottom / 100% 20px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgba(11, 11, 11, 0.16), transparent) top / 100% 8px no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgba(11, 11, 11, 0.16), transparent) bottom / 100% 8px no-repeat scroll;
+}
+
+.modal__body p + p {
+  margin-top: var(--s3);
+}
+
+.modal__body strong {
+  color: var(--text-primary);
+}
+
+.modal__section {
+  margin-top: var(--s4);
+}
+
+.modal__section:first-child {
+  margin-top: 0;
+}
+
+.modal__section h3 {
+  font-size: var(--t-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: var(--s2);
+  font-weight: 640;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* keyboard shortcut table */
+.shortcuts {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.shortcuts td {
+  padding: var(--s1) 0;
+  vertical-align: baseline;
+}
+
+.shortcuts td:first-child {
+  width: 1%;
+  padding-right: var(--s4);
+  white-space: nowrap;
+}
+
+kbd {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+  line-height: 1.6;
+  background: var(--surface-2);
+  border: 1px solid var(--baseline);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0 5px;
+  color: var(--text-primary);
+}
+
+/* ------------------------------------------------------------- layout ---- */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  min-width: 0;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: var(--s4);
+  align-items: start;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex-wrap: wrap;
+  padding: var(--s2) var(--s3);
+  background: var(--surface-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-1);
+}
+
+.toolbar__label {
+  font-size: var(--t-sm);
+  font-weight: 560;
+  color: var(--text-secondary);
+}
+
+/* Tokens that jointly cover one character are drawn as one joined unit, with a
+   shared underline marking the extent. Each remains its own button, because
+   each is its own position in the attention matrix. */
+.cluster {
+  display: inline-flex;
+  gap: 0;
+}
+
+.cluster--frag {
+  border-bottom: 2px solid var(--status-warning);
+  border-radius: 0 0 4px 4px;
+}
+
+.cluster--frag .chip {
+  border-radius: 0;
+}
+
+.cluster--frag .chip:first-child {
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+
+.cluster--frag .chip:last-child {
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+.cluster--frag .chip + .chip {
+  margin-left: 1px;
+}
+
+/* the "⋯" continuation token: present and hoverable, but visually secondary
+   to the character it is part of */
+.chip--cont {
+  color: var(--text-muted);
+  padding-left: 4px;
+  padding-right: 4px;
+}
