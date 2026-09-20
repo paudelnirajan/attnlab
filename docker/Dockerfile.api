@@ -1,0 +1,31 @@
+# Stage 0b+ API image. Unlike docker/Dockerfile.bench (a one-shot batch
+# job), this runs a long-lived server — Mode B settings still apply
+# (docs/PLAN.md "Two-mode development"): CPU-only, 2 threads, matching
+# whatever memory limit the container is run with.
+#
+# This is NOT yet the Stage 4 production image: it does not bake any
+# models into the layer (see docs/PLAN.md Stage 4 — that's a separate,
+# multi-stage Dockerfile that also bundles the built frontend). This one
+# is for local/dev serving and CI.
+FROM python:3.11-slim
+
+ENV OMP_NUM_THREADS=2 \
+    MKL_NUM_THREADS=2 \
+    MI_DEVICE=cpu \
+    MI_THREADS=2 \
+    MI_RAM_BUDGET_GB=6 \
+    PYTHONUNBUFFERED=1 \
+    HF_HOME=/hf-cache
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir uv==0.10.0
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project
+
+COPY src ./src
+RUN uv sync --frozen
+
+EXPOSE 8000
+ENTRYPOINT ["uv", "run", "uvicorn", "attnlab.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
