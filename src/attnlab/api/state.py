@@ -22,6 +22,7 @@ from typing import AsyncGenerator
 
 import numpy as np
 
+from attnlab.toklab import TokenizerCache
 from attnlab.zoo import ModelZoo
 
 RUN_TTL_SECONDS = 600  # docs/02-api.md: "~10 min"
@@ -44,6 +45,9 @@ class RunRecord:
 class AppState:
     def __init__(self, *, registry_path: str | None = None, budget_mb: float | None = None):
         self.zoo = ModelZoo(registry_path=registry_path, budget_mb=budget_mb)
+        # Tokenizers are cached separately from models and are NOT behind the
+        # semaphore: see api/toklab_routes.py.
+        self.tokenizers = TokenizerCache()
         self.semaphore = asyncio.Semaphore(1)
         self.runs: dict[str, RunRecord] = {}
         self._waiting = 0  # requests currently queued behind the semaphore

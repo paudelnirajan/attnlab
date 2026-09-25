@@ -116,6 +116,7 @@ source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "pyyaml" },
+    { name = "regex" },
     { name = "transformer-lens" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -130,6 +131,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "pyyaml", specifier = ">=6.0" },
+    { name = "regex", specifier = ">=2024.0" },
     { name = "transformer-lens", specifier = "==2.18.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]

@@ -41,3 +41,8 @@ class RunNotFoundError(ApiError):
 class BusyError(ApiError):
     code = "busy"
     status_code = 503
+
+
+class TextTooLongError(ApiError):
+    code = "text_too_long"
+    status_code = 422

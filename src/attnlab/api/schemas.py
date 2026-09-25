@@ -40,3 +40,24 @@ class RunRequest(BaseModel):
         if (self.text is None) == (self.repeated is None):
             raise ValueError("provide exactly one of `text` or `repeated`, not both/neither")
         return self
+
+
+# --- Tokenizer lab (api/toklab_routes.py) ---------------------------------
+# Length limits live in the routes, not here, for the same reason as
+# RepeatedSpec.length above: one documented error shape for "too long".
+
+
+class AnalyzeRequest(BaseModel):
+    tokenizers: list[str] = Field(min_length=1)
+    text: str
+    add_special_tokens: bool = False
+
+
+class TraceRequest(BaseModel):
+    tokenizer: str
+    text: str
+
+
+class CountRequest(BaseModel):
+    tokenizers: list[str] = Field(min_length=1)
+    texts: list[str] = Field(min_length=1)

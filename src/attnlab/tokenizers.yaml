@@ -1,0 +1,102 @@
+# Tokenizer registry for the Tokenizer lab — data, not code, same rule as
+# models.yaml: adding a tokenizer here is the only change needed to offer it.
+#
+# Tokenizers are loaded on their own (AutoTokenizer), never through the model
+# zoo: a tokenizer is a few MB and loads in ~1 s, where its model can be GBs.
+# That is what lets the lab compare tokenizers whose models we could never
+# afford to host (GPT-4o's, Qwen's) alongside the ones the attention lab runs.
+#
+# algorithm (drives which step-through the lab can show):
+#   byte-bpe  - BPE over raw UTF-8 bytes (GPT-2 family). Never produces <unk>.
+#   sp-bpe    - SentencePiece-style BPE over characters, with ▁ for spaces and
+#               <0xNN> byte fallback for characters outside the vocabulary.
+#   wordpiece - BERT's greedy longest-match-first, ## marks a word continuation.
+#   unigram   - SentencePiece Unigram LM: picks the most probable segmentation.
+#
+# models: attnlab model ids (models.yaml) that use this exact vocabulary, so the
+# lab can hand the same text to the attention lab with a model that actually
+# sees these tokens.
+#
+# source: "official" when hf_name is the model owner's own repo; "port" when it
+# is a community conversion (the lab says so next to the label).
+
+- id: gpt2
+  label: "GPT-2"
+  hf_name: gpt2
+  algorithm: byte-bpe
+  year: 2019
+  source: official
+  models: [gpt2-small, gpt2-medium]
+  blurb: "The ARENA default. 50k byte-level BPE merges learned on English web text."
+
+- id: gpt-neox
+  label: "GPT-NeoX / Pythia"
+  hf_name: EleutherAI/pythia-160m
+  algorithm: byte-bpe
+  year: 2022
+  source: official
+  models: [pythia-160m, attn-only-2l-demo]
+  blurb: "Trained on the Pile, so it has code-friendly tokens for runs of spaces."
+
+- id: bloom
+  label: "BLOOM"
+  hf_name: bigscience/bloom-560m
+  algorithm: byte-bpe
+  year: 2022
+  source: official
+  models: [bloom-560m]
+  blurb: "250k-token vocabulary built for 46 natural languages."
+
+- id: qwen2.5
+  label: "Qwen 2.5"
+  hf_name: Qwen/Qwen2.5-0.5B
+  algorithm: byte-bpe
+  year: 2024
+  source: official
+  models: []
+  blurb: "151k tokens, heavy on Chinese and code. Splits numbers into single digits."
+
+- id: llama2
+  label: "Llama 2 (TinyLlama)"
+  hf_name: TinyLlama/TinyLlama-1.1B-Chat-v1.0
+  algorithm: sp-bpe
+  year: 2023
+  source: official
+  models: []
+  blurb: "Llama 2's 32k SentencePiece vocabulary: characters first, raw bytes only as a fallback."
+
+- id: cl100k
+  label: "GPT-4 (cl100k_base)"
+  hf_name: Xenova/gpt-4
+  algorithm: byte-bpe
+  year: 2023
+  source: port
+  models: []
+  blurb: "OpenAI's GPT-3.5/GPT-4 encoding, as a Hugging Face conversion of tiktoken's."
+
+- id: o200k
+  label: "GPT-4o (o200k_base)"
+  hf_name: Xenova/gpt-4o
+  algorithm: byte-bpe
+  year: 2024
+  source: port
+  models: []
+  blurb: "OpenAI's GPT-4o encoding: twice cl100k's vocabulary, much of it non-English."
+
+- id: bert-uncased
+  label: "BERT (uncased)"
+  hf_name: bert-base-uncased
+  algorithm: wordpiece
+  year: 2018
+  source: official
+  models: []
+  blurb: "WordPiece. Lowercases and strips accents before it splits anything."
+
+- id: xlm-roberta
+  label: "XLM-RoBERTa"
+  hf_name: FacebookAI/xlm-roberta-base
+  algorithm: unigram
+  year: 2019
+  source: official
+  models: []
+  blurb: "SentencePiece Unigram over 100 languages. Chooses a segmentation by probability, not by merges."

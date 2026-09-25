@@ -14,9 +14,10 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from attnlab.api import routes
+from attnlab.api import routes, toklab_routes
 from attnlab.api.errors import ApiError
 from attnlab.api.state import AppState
+from attnlab.toklab import TokenizerUnavailableError, UnknownTokenizerError
 from attnlab.zoo import BudgetExceededError, ModelDisabledError, UnknownModelError
 
 
@@ -29,6 +30,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 app = FastAPI(title="attnlab API", lifespan=lifespan)
 app.include_router(routes.router, prefix="/api")
+app.include_router(toklab_routes.router, prefix="/api")
 
 
 def _error_response(status_code: int, code: str, message: str, detail: dict[str, Any] | None = None) -> JSONResponse:
@@ -61,3 +63,13 @@ async def handle_budget_exceeded(request: Request, exc: BudgetExceededError) -> 
         str(exc),
         {"model": exc.model_id, "needed_mb": exc.needed_mb, "budget_mb": exc.budget_mb},
     )
+
+
+@app.exception_handler(UnknownTokenizerError)
+async def handle_unknown_tokenizer(request: Request, exc: UnknownTokenizerError) -> JSONResponse:
+    return _error_response(404, "unknown_tokenizer", str(exc), {"tokenizer": exc.tokenizer_id})
+
+
+@app.exception_handler(TokenizerUnavailableError)
+async def handle_tokenizer_unavailable(request: Request, exc: TokenizerUnavailableError) -> JSONResponse:
+    return _error_response(503, "tokenizer_unavailable", str(exc), {"tokenizer": exc.tokenizer_id})
