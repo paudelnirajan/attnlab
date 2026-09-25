@@ -18,6 +18,8 @@ import { TopBar } from "./components/TopBar";
 import { useDebouncedValue } from "./hooks/useDebouncedValue";
 import { useDelayedFlag } from "./hooks/useDelayedFlag";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { PathNav } from "./labs/PathNav";
+import { labHref } from "./labs/registry";
 import { DIRECTION_COPY } from "./lib/attention";
 import { useStore } from "./state/store";
 import { writePermalinkToUrl } from "./state/urlSync";
@@ -237,6 +239,11 @@ export default function App() {
                   })()}{" "}
                   · hover to link, click to pin
                 </span>
+                <span className="spacer" />
+                {/* back to step 1 with the same text: "why did it cut there?" */}
+                <a className="linkbtn" href={labHref("tokens", { model, text: prompt })}>
+                  Why these pieces? Tokenizer lab →
+                </a>
               </div>
               <div className="card__body card__body--tight">
                 <TokenizerPanel />
@@ -280,6 +287,7 @@ export default function App() {
             </div>
           </div>
         )}
+        <PathNav labId="attention" />
       </main>
 
       {openModal === "help" && <KeyboardHelp onClose={closeModal} />}

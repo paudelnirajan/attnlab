@@ -1,0 +1,587 @@
+{
+ "tokenizers": {
+  "tokenizers": [
+   {
+    "id": "gpt2",
+    "label": "GPT-2",
+    "hf_name": "gpt2",
+    "algorithm": "byte-bpe",
+    "year": 2019,
+    "source": "official",
+    "models": [
+     "gpt2-small",
+     "gpt2-medium"
+    ],
+    "blurb": "The ARENA default. 50k byte-level BPE merges learned on English web text.",
+    "loaded": false
+   },
+   {
+    "id": "gpt-neox",
+    "label": "GPT-NeoX / Pythia",
+    "hf_name": "EleutherAI/pythia-160m",
+    "algorithm": "byte-bpe",
+    "year": 2022,
+    "source": "official",
+    "models": [
+     "pythia-160m",
+     "attn-only-2l-demo"
+    ],
+    "blurb": "Trained on the Pile, so it has code-friendly tokens for runs of spaces.",
+    "loaded": false
+   },
+   {
+    "id": "bloom",
+    "label": "BLOOM",
+    "hf_name": "bigscience/bloom-560m",
+    "algorithm": "byte-bpe",
+    "year": 2022,
+    "source": "official",
+    "models": [
+     "bloom-560m"
+    ],
+    "blurb": "250k-token vocabulary built for 46 natural languages.",
+    "loaded": false
+   },
+   {
+    "id": "qwen2.5",
+    "label": "Qwen 2.5",
+    "hf_name": "Qwen/Qwen2.5-0.5B",
+    "algorithm": "byte-bpe",
+    "year": 2024,
+    "source": "official",
+    "models": [],
+    "blurb": "151k tokens, heavy on Chinese and code. Splits numbers into single digits.",
+    "loaded": false
+   },
+   {
+    "id": "llama2",
+    "label": "Llama 2 (TinyLlama)",
+    "hf_name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    "algorithm": "sp-bpe",
+    "year": 2023,
+    "source": "official",
+    "models": [],
+    "blurb": "Llama 2's 32k SentencePiece vocabulary: characters first, raw bytes only as a fallback.",
+    "loaded": false
+   },
+   {
+    "id": "cl100k",
+    "label": "GPT-4 (cl100k_base)",
+    "hf_name": "Xenova/gpt-4",
+    "algorithm": "byte-bpe",
+    "year": 2023,
+    "source": "port",
+    "models": [],
+    "blurb": "OpenAI's GPT-3.5/GPT-4 encoding, as a Hugging Face conversion of tiktoken's.",
+    "loaded": false
+   },
+   {
+    "id": "o200k",
+    "label": "GPT-4o (o200k_base)",
+    "hf_name": "Xenova/gpt-4o",
+    "algorithm": "byte-bpe",
+    "year": 2024,
+    "source": "port",
+    "models": [],
+    "blurb": "OpenAI's GPT-4o encoding: twice cl100k's vocabulary, much of it non-English.",
+    "loaded": false
+   },
+   {
+    "id": "bert-uncased",
+    "label": "BERT (uncased)",
+    "hf_name": "bert-base-uncased",
+    "algorithm": "wordpiece",
+    "year": 2018,
+    "source": "official",
+    "models": [],
+    "blurb": "WordPiece. Lowercases and strips accents before it splits anything.",
+    "loaded": false
+   },
+   {
+    "id": "xlm-roberta",
+    "label": "XLM-RoBERTa",
+    "hf_name": "FacebookAI/xlm-roberta-base",
+    "algorithm": "unigram",
+    "year": 2019,
+    "source": "official",
+    "models": [],
+    "blurb": "SentencePiece Unigram over 100 languages. Chooses a segmentation by probability, not by merges.",
+    "loaded": false
+   }
+  ]
+ },
+ "analyze": {
+  "gpt2|aन b": {
+   "tokenizer": "gpt2",
+   "tokens": [
+    {
+     "index": 0,
+     "id": 64,
+     "piece": "a",
+     "display": "a",
+     "text": "a",
+     "byte_hex": "61",
+     "start": 0,
+     "end": 1,
+     "kind": "piece",
+     "rank": null,
+     "score": null,
+     "cluster": 0,
+     "cluster_size": 1,
+     "cluster_index": 0,
+     "cluster_text": "a"
+    },
+    {
+     "index": 1,
+     "id": 11976,
+     "piece": "à¤",
+     "display": "न",
+     "text": null,
+     "byte_hex": "e0a4",
+     "start": 1,
+     "end": 2,
+     "kind": "byte",
+     "rank": 11720,
+     "score": null,
+     "cluster": 1,
+     "cluster_size": 2,
+     "cluster_index": 0,
+     "cluster_text": "न"
+    },
+    {
+     "index": 2,
+     "id": 101,
+     "piece": "¨",
+     "display": "⋯",
+     "text": null,
+     "byte_hex": "a8",
+     "start": 1,
+     "end": 2,
+     "kind": "byte",
+     "rank": null,
+     "score": null,
+     "cluster": 1,
+     "cluster_size": 2,
+     "cluster_index": 1,
+     "cluster_text": "न"
+    },
+    {
+     "index": 3,
+     "id": 275,
+     "piece": "Ġb",
+     "display": "·b",
+     "text": " b",
+     "byte_hex": "2062",
+     "start": 2,
+     "end": 4,
+     "kind": "piece",
+     "rank": 19,
+     "score": null,
+     "cluster": 2,
+     "cluster_size": 1,
+     "cluster_index": 0,
+     "cluster_text": "·b"
+    }
+   ],
+   "stats": {
+    "n_chars": 4,
+    "n_graphemes": 4,
+    "n_bytes": 6,
+    "n_words": 2,
+    "n_tokens": 4,
+    "n_special": 0,
+    "n_inserted": 0,
+    "n_fragment_tokens": 2,
+    "n_byte_tokens": 2,
+    "n_unk": 0,
+    "lossless": true,
+    "roundtrip": true
+   },
+   "decoded": "aन b",
+   "pipeline": {
+    "normalizers": [],
+    "pre_tokenizers": [
+     "ByteLevel"
+    ],
+    "split_patterns": [
+     "GPT-2 regex: 's|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+"
+    ],
+    "model": "BPE",
+    "byte_fallback": false,
+    "n_merges": 50000,
+    "decoders": [
+     "ByteLevel"
+    ],
+    "normalized": "aन b",
+    "normalized_changed": false,
+    "pretokens": [
+     {
+      "raw": "aà¤¨",
+      "display": "aन",
+      "start": 0,
+      "end": 2
+     },
+     {
+      "raw": "Ġb",
+      "display": "·b",
+      "start": 2,
+      "end": 4
+     }
+    ],
+    "pretokens_truncated": false
+   }
+  },
+  "llama2|aन b": {
+   "tokenizer": "llama2",
+   "tokens": [
+    {
+     "index": 0,
+     "id": 263,
+     "piece": "▁a",
+     "display": "·a",
+     "text": " a",
+     "byte_hex": "2061",
+     "start": 0,
+     "end": 1,
+     "kind": "piece",
+     "rank": 3,
+     "score": null,
+     "cluster": 0,
+     "cluster_size": 1,
+     "cluster_index": 0,
+     "cluster_text": "a"
+    },
+    {
+     "index": 1,
+     "id": 30424,
+     "piece": "न",
+     "display": "न",
+     "text": "न",
+     "byte_hex": "e0a4a8",
+     "start": 1,
+     "end": 2,
+     "kind": "piece",
+     "rank": null,
+     "score": null,
+     "cluster": 1,
+     "cluster_size": 1,
+     "cluster_index": 0,
+     "cluster_text": "न"
+    },
+    {
+     "index": 2,
+     "id": 289,
+     "piece": "▁b",
+     "display": "·b",
+     "text": " b",
+     "byte_hex": "2062",
+     "start": 2,
+     "end": 4,
+     "kind": "piece",
+     "rank": 31,
+     "score": null,
+     "cluster": 2,
+     "cluster_size": 1,
+     "cluster_index": 0,
+     "cluster_text": "·b"
+    }
+   ],
+   "stats": {
+    "n_chars": 4,
+    "n_graphemes": 4,
+    "n_bytes": 6,
+    "n_words": 2,
+    "n_tokens": 3,
+    "n_special": 0,
+    "n_inserted": 0,
+    "n_fragment_tokens": 0,
+    "n_byte_tokens": 0,
+    "n_unk": 0,
+    "lossless": true,
+    "roundtrip": true
+   },
+   "decoded": "aन b",
+   "pipeline": {
+    "normalizers": [
+     "Prepend",
+     "Replace"
+    ],
+    "pre_tokenizers": [],
+    "split_patterns": [],
+    "model": "BPE",
+    "byte_fallback": true,
+    "n_merges": 61249,
+    "decoders": [
+     "Replace",
+     "ByteFallback",
+     "Fuse",
+     "Strip"
+    ],
+    "normalized": "▁aन▁b",
+    "normalized_changed": true,
+    "pretokens": [
+     {
+      "raw": "▁aन▁b",
+      "display": "·aन·b",
+      "start": 0,
+      "end": 5
+     }
+    ],
+    "pretokens_truncated": false
+   }
+  }
+ },
+ "trace": {
+  "gpt2| unbelievably": {
+   "tokenizer": "gpt2",
+   "algorithm": "byte-bpe",
+   "n_merges": 50000,
+   "words": [
+    {
+     "raw": "Ġunbelievably",
+     "display": "·unbelievably",
+     "initial": [
+      "·",
+      "u",
+      "n",
+      "b",
+      "e",
+      "l",
+      "i",
+      "e",
+      "v",
+      "a",
+      "b",
+      "l",
+      "y"
+     ],
+     "steps": [
+      {
+       "rank": 50,
+       "left": "l",
+       "right": "y",
+       "merged": "ly",
+       "at": [
+        11
+       ],
+       "symbols": [
+        "·",
+        "u",
+        "n",
+        "b",
+        "e",
+        "l",
+        "i",
+        "e",
+        "v",
+        "a",
+        "b",
+        "ly"
+       ]
+      },
+      {
+       "rank": 78,
+       "left": "·",
+       "right": "u",
+       "merged": "·u",
+       "at": [
+        0
+       ],
+       "symbols": [
+        "·u",
+        "n",
+        "b",
+        "e",
+        "l",
+        "i",
+        "e",
+        "v",
+        "a",
+        "b",
+        "ly"
+       ]
+      },
+      {
+       "rank": 141,
+       "left": "a",
+       "right": "b",
+       "merged": "ab",
+       "at": [
+        8
+       ],
+       "symbols": [
+        "·u",
+        "n",
+        "b",
+        "e",
+        "l",
+        "i",
+        "e",
+        "v",
+        "ab",
+        "ly"
+       ]
+      },
+      {
+       "rank": 161,
+       "left": "e",
+       "right": "l",
+       "merged": "el",
+       "at": [
+        3
+       ],
+       "symbols": [
+        "·u",
+        "n",
+        "b",
+        "el",
+        "i",
+        "e",
+        "v",
+        "ab",
+        "ly"
+       ]
+      },
+      {
+       "rank": 238,
+       "left": "i",
+       "right": "e",
+       "merged": "ie",
+       "at": [
+        4
+       ],
+       "symbols": [
+        "·u",
+        "n",
+        "b",
+        "el",
+        "ie",
+        "v",
+        "ab",
+        "ly"
+       ]
+      },
+      {
+       "rank": 299,
+       "left": "·u",
+       "right": "n",
+       "merged": "·un",
+       "at": [
+        0
+       ],
+       "symbols": [
+        "·un",
+        "b",
+        "el",
+        "ie",
+        "v",
+        "ab",
+        "ly"
+       ]
+      },
+      {
+       "rank": 1090,
+       "left": "ab",
+       "right": "ly",
+       "merged": "ably",
+       "at": [
+        5
+       ],
+       "symbols": [
+        "·un",
+        "b",
+        "el",
+        "ie",
+        "v",
+        "ably"
+       ]
+      },
+      {
+       "rank": 6411,
+       "left": "b",
+       "right": "el",
+       "merged": "bel",
+       "at": [
+        1
+       ],
+       "symbols": [
+        "·un",
+        "bel",
+        "ie",
+        "v",
+        "ably"
+       ]
+      },
+      {
+       "rank": 10947,
+       "left": "ie",
+       "right": "v",
+       "merged": "iev",
+       "at": [
+        2
+       ],
+       "symbols": [
+        "·un",
+        "bel",
+        "iev",
+        "ably"
+       ]
+      },
+      {
+       "rank": 17235,
+       "left": "·un",
+       "right": "bel",
+       "merged": "·unbel",
+       "at": [
+        0
+       ],
+       "symbols": [
+        "·unbel",
+        "iev",
+        "ably"
+       ]
+      },
+      {
+       "rank": 20298,
+       "left": "·unbel",
+       "right": "iev",
+       "merged": "·unbeliev",
+       "at": [
+        0
+       ],
+       "symbols": [
+        "·unbeliev",
+        "ably"
+       ]
+      },
+      {
+       "rank": 48687,
+       "left": "·unbeliev",
+       "right": "ably",
+       "merged": "·unbelievably",
+       "at": [
+        0
+       ],
+       "symbols": [
+        "·unbelievably"
+       ]
+      }
+     ],
+     "final": [
+      "·unbelievably"
+     ],
+     "final_ids": [
+      48943
+     ],
+     "actual": [
+      "·unbelievably"
+     ],
+     "scores": null,
+     "verified": true,
+     "notes": []
+    }
+   ],
+   "truncated": false
+  }
+ }
+}

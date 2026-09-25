@@ -1,3 +1,4 @@
+import { LABS, currentLabId } from "../labs/registry";
 import { useStore } from "../state/store";
 import type { ThemeMode } from "../theme";
 
@@ -6,11 +7,13 @@ const MODE_ICON: Record<ThemeMode, string> = { system: "◐", light: "☀", dark
 const MODE_LABEL: Record<ThemeMode, string> = { system: "follow system", light: "light", dark: "dark" };
 
 interface Props {
-  onShowHelp: () => void;
-  onShowAbout: () => void;
+  /** lab-specific actions; a lab without shortcuts or a reading guide omits them */
+  onShowHelp?: () => void;
+  onShowAbout?: () => void;
 }
 
 export function TopBar({ onShowHelp, onShowAbout }: Props) {
+  const here = currentLabId();
   const runPhase = useStore((s) => s.runPhase);
   const runResult = useStore((s) => s.runResult);
   const themeMode = useStore((s) => s.themeMode);
@@ -20,10 +23,22 @@ export function TopBar({ onShowHelp, onShowAbout }: Props) {
 
   return (
     <header className="topbar">
-      <div className="topbar__brand">
+      <a className="topbar__brand" href="/">
         attnlab
-        <small>attention patterns, live</small>
-      </div>
+        <small>interpretability labs</small>
+      </a>
+
+      {/* The lab switcher. Plain links, not client-side routing: each lab
+          hydrates its own state from its URL, so a full navigation is both
+          simpler and exactly what a copied permalink does anyway. */}
+      <nav className="labnav" aria-label="Labs">
+        {LABS.filter((l) => l.status === "live").map((l) => (
+          <a key={l.id} className="labnav__link" href={l.path} aria-current={here === l.id ? "page" : undefined}>
+            <span className="labnav__step">{l.step}</span>
+            {l.title}
+          </a>
+        ))}
+      </nav>
 
       <div className="topbar__spacer" />
 
@@ -40,12 +55,17 @@ export function TopBar({ onShowHelp, onShowAbout }: Props) {
         </span>
       ) : null}
 
-      <button type="button" className="btn btn--ghost btn--sm" onClick={onShowAbout}>
-        How to read this
-      </button>
-      <button type="button" className="btn btn--ghost btn--sm" onClick={onShowHelp}>
-        Shortcuts <kbd>?</kbd>
-      </button>
+      {onShowAbout && (
+        <button type="button" className="btn btn--ghost btn--sm" onClick={onShowAbout}>
+          How to read this
+        </button>
+      )}
+      {onShowHelp && (
+        // hidden on narrow screens: a phone has no keyboard to use them with
+        <button type="button" className="btn btn--ghost btn--sm topbar__shortcuts" onClick={onShowHelp}>
+          Shortcuts <kbd>?</kbd>
+        </button>
+      )}
       <button
         type="button"
         className="btn btn--ghost btn--icon"

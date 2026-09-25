@@ -1,0 +1,423 @@
+{
+ "source": "FLORES+ (openlanguagedata/flores_plus), dev split, sentence ids 3, 4, 5, 8, 11",
+ "license": "CC BY-SA 4.0",
+ "url": "https://huggingface.co/datasets/openlanguagedata/flores_plus",
+ "languages": [
+  {
+   "code": "eng_Latn",
+   "name": "English",
+   "native": "English",
+   "script": "Latin",
+   "sentences": [
+    "The pilot was identified as Squadron Leader Dilokrit Pattavee.",
+    "Local media reports an airport fire vehicle rolled over while responding.",
+    "28-year-old Vidal had joined Barça three seasons ago, from Sevilla.",
+    "Just after 11:00, protesters blocked traffic on the northbound carriage in Whitehall.",
+    "Nadal's head to head record against the Canadian is 7–2."
+   ]
+  },
+  {
+   "code": "deu_Latn",
+   "name": "German",
+   "native": "Deutsch",
+   "script": "Latin",
+   "sentences": [
+    "Der Pilot wurde als Staffelführer Dilokrit Pattavee identifiziert.",
+    "Lokale Medien berichten, dass ein Feuerwehrwagen während der Rettungsaktion umkippte.",
+    "Der 28-jährige Vidal war vor drei Spielzeiten von Sevilla zu Barça gekommen.",
+    "Kurz nach 11.00 Uhr blockierten die Demonstranten den Verkehr Richtung Norden in Whitehall.",
+    "Nadals Rekord im direkten Vergleich gegen den Kanadier liegt bei 7:2."
+   ]
+  },
+  {
+   "code": "fra_Latn",
+   "name": "French",
+   "native": "Français",
+   "script": "Latin",
+   "sentences": [
+    "Le pilote a été identifié comme étant le chef d’escadron Dilokrit Pattavee.",
+    "La presse locale a rapporté qu'un véhicule de lutte contre l'incendie de l'aéroport a fait des tonneaux en portant secours.",
+    "Vidal, 28 ans, avait rejoint le Barça il y a trois saisons, en provenance de Séville.",
+    "À Whitehall, peu après 11 h 00, des manifestants ont bloqué la circulation des véhicules en direction du nord.",
+    "Le score de Nadal en confrontations directes face au Canadien est de 7-2."
+   ]
+  },
+  {
+   "code": "spa_Latn",
+   "name": "Spanish",
+   "native": "Español",
+   "script": "Latin",
+   "sentences": [
+    "Se identificó al piloto como Dilokrit Pattavee, líder de escuadrón.",
+    "La prensa local informó que una patrulla de bomberos del aeropuerto volcó mientras prestaba servicio.",
+    "Vidal, de 28 años de edad y procedente del Sevilla, se unió al Barça hace tres temporadas.",
+    "Apenas pasadas las 11:00 h, los integrantes de la manifestación bloquearon la circulación del carril de Whitehall que va hacia el norte.",
+    "El récord mano a mano de Nadal contra el canadiense fue de 7-2."
+   ]
+  },
+  {
+   "code": "ita_Latn",
+   "name": "Italian",
+   "native": "Italiano",
+   "script": "Latin",
+   "sentences": [
+    "L'identificazione del pilota ha rivelato che si trattava del capo squadriglia Dilokrit Pattavee.",
+    "I media locali riferiscono che durante l'intervento un veicolo aeroportuale antincendio si è ribaltato.",
+    "Il 28enne Vidal era passato dal Siviglia al Barça tre stagioni fa.",
+    "Subito dopo le 11:00, i manifestanti hanno interrotto il traffico della locomotiva che si dirigeva a nord, presso Whitehall.",
+    "Il risultato migliore degli scontri diretti di Nadal contro il canadese è 7-2."
+   ]
+  },
+  {
+   "code": "por_Latn",
+   "name": "Portuguese",
+   "native": "Português",
+   "script": "Latin",
+   "sentences": [
+    "O piloto foi identificado como o Líder de Esquadrão Dilokrit Pattavee.",
+    "A mídia local informa o capotamento de um veículo de incêndio do aeroporto, durante o atendimento.",
+    "Vidal, de 28 anos, foi contratado pelo Barça há três temporadas, tendo vindo do Sevilha.",
+    "Logo após as 11h, os manifestantes bloquearam o acesso em direção ao norte de Whitehall.",
+    "O recorde de embates de forma direta de Nadal contra o atleta do Canadá é de 7–2."
+   ]
+  },
+  {
+   "code": "fin_Latn",
+   "name": "Finnish",
+   "native": "Suomi",
+   "script": "Latin",
+   "sentences": [
+    "Lentäjä tunnistettiin majuri Dilokrit Pattaveeksi.",
+    "Sikäläisen median mukaan lentokentän paloauto pyörähti ympäri tullessaan paikalle.",
+    "28-vuotias Vidal oli siirtynyt Barçaan Sevillasta kolmea kautta aikaisemmin.",
+    "Pian klo 11.00 jälkeen mielenosoittajat tukkivat liikenteen Whitehallin pohjoiseen johtavilla kaistoilla.",
+    "Nadalin ja kanadalaisen kohtaamiset ovat menneet edellisen eduksi 7–2."
+   ]
+  },
+  {
+   "code": "tur_Latn",
+   "name": "Turkish",
+   "native": "Türkçe",
+   "script": "Latin",
+   "sentences": [
+    "Pilot, Filo Lideri Dilokrit Pattavee olarak belirlendi.",
+    "Yerel basında bir havaalanı yangın söndürme aracının olaya müdahale ederken devrildiği belirtildi.",
+    "28 yaşındaki Vidal, üç sezon önce Sevilla'dan Barça'ya transfer olmuştu.",
+    "11.00'dan hemen sonra protestocular, Whitehall'daki kuzeye giden vagonda trafiği engellediler.",
+    "Nadal'ın Kanadalı sporcu karşısındaki rekoru 7-2."
+   ]
+  },
+  {
+   "code": "vie_Latn",
+   "name": "Vietnamese",
+   "native": "Tiếng Việt",
+   "script": "Latin",
+   "sentences": [
+    "Viên phi công được xác định là Chỉ huy đội bay Dilokrit Pattavee.",
+    "Truyền thông địa phương đưa tin một phương tiện chữa cháy sân bay đã tới khi trả lời.",
+    "Ba mùa trước, Vidal đã rời Sevilla để gia nhập Barca ở độ tuổi 28.",
+    "Ngay sau 11 giờ những người biểu tình đã chặn xe trên đường phía bắc ở Whitehall.",
+    "Thành tích đối đầu của Nadal trước đối thủ người Canada này là 7-2."
+   ]
+  },
+  {
+   "code": "ind_Latn",
+   "name": "Indonesian",
+   "native": "Bahasa Indonesia",
+   "script": "Latin",
+   "sentences": [
+    "Pilot tersebut diidentifikasi sebagai Pemimpin Skuadron Dilokrit Pattavee.",
+    "Media lokal melaporkan sebuah kendaraan pemadam api di bandara terguling saat sedang dioperasikan.",
+    "Vidal yang berusia 28 tahun bergabung dengan BarÃ§a tiga musim yang lalu, dari Sevilla.",
+    "Pengunjuk rasa tepat setelah pukul 11.00 memblokir lalu lintas pengangkutan yang menuju arah utara di Whitehall.",
+    "Adu rekor Nadal melawan petenis asal Kanada tersebut yaitu 7â€“2."
+   ]
+  },
+  {
+   "code": "swh_Latn",
+   "name": "Swahili",
+   "native": "Kiswahili",
+   "script": "Latin",
+   "sentences": [
+    "Rubani alitambuliwa kama Kiongozi wa Kikosi Dilokrit Pattavee.",
+    "Vyombo vya habari vya ndani vinaripoti kwamba gari la zimamoto la uwanja wa ndege lilibingirika wakati wa kuitikia.",
+    "Vidal mwenye umri wa miaka 28 alikuwa amejiunga na Barca misimu mitatu iliyopita kutoka Sevilla.",
+    "Muda mfupi baada ya saa 5, waandamanaji walizuia trafiki kwenye njia ya kuelekea kaskazini katika Whitehall.",
+    "Rekodi ya Nadal dhidi ya Kanada ni 7-2."
+   ]
+  },
+  {
+   "code": "yor_Latn",
+   "name": "Yoruba",
+   "native": "Yorùbá",
+   "script": "Latin",
+   "sentences": [
+    "Won da Olori Skwodroni. Dilokrit Pattavee gege bi awako ofururu.",
+    "Ilé isé oníròyìn abẹ́lé́ fi síta wípé ọkọ̀ panápaná ilé isé ọkọ̀ òfuurufú subú nígbà tí o ń sisẹ́.",
+    "Fidali, omo odun-28 ti darapọ̀ mọ́ ẹgbẹ́ agbáboolu Basilona ní àkókò ìdíjé méta sẹ́yin, láti Sefila.",
+    "Ní kété lẹ́yìn agogo mọ́kànlá, àwọn tó ń fi èhónú hàn dí ojú pópónà ọ̀nà tóbá àríwá jádé ní gbòngàn funfun.",
+    "Nadal sàkọọ́lẹ̀ ìforígbárí o ní àmì méje sóódo pẹ̀lú ilẹ̀ Canada."
+   ]
+  },
+  {
+   "code": "rus_Cyrl",
+   "name": "Russian",
+   "native": "Русский",
+   "script": "Cyrillic",
+   "sentences": [
+    "Личность пилота была установлена. Им оказался командир эскадрильи Дилокрит Паттави.",
+    "Местные СМИ сообщают, что в аэропорту по пути на вызов перевернулась пожарная машина.",
+    "28-летний Алеш Видаль перешел в \"Барсу\" из \"Севильи\" три сезона назад.",
+    "Сразу после 11:00 протестующие перекрыли движение в северном направлении по Уайтхоллу.",
+    "Рекорд Надала в схватках один на один с канадцем —  7–2."
+   ]
+  },
+  {
+   "code": "ukr_Cyrl",
+   "name": "Ukrainian",
+   "native": "Українська",
+   "script": "Cyrillic",
+   "sentences": [
+    "Пілота пізніше опізнали як майора авіації Ділокріта Паттаві.",
+    "Місцеві ЗМІ повідомляють, що пожежна машина аеропорту перекинулася під час виклику.",
+    "28-річний Відаль прийшов у Барселону три сезону тому із Севільї.",
+    "Відразу після 11:00 протестувальники заблокували рух у північному напрямку вулиці Вайтголл.",
+    "Особистий рекорд Надаля проти канадця складає 7–2."
+   ]
+  },
+  {
+   "code": "ell_Grek",
+   "name": "Greek",
+   "native": "Ελληνικά",
+   "script": "Greek",
+   "sentences": [
+    "Ο πιλότος αναγνωρίστηκε ως ο επισμηναγός Ντιλόκριτ Πάτταβι.",
+    "Τοπικά μέσα ενημέρωσης μιλούν για την ανατροπή ενός πυροσβεστικού οχήματος αεροδρομίου κατά την κινητοποίησή του.",
+    "Ο 28χρονος Βιντάλ είχε ενταχθεί στη Μπάρτσα τρεις σεζόν νωρίτερα, από τη Σεβίλλη.",
+    "Αμέσως μετά τις 11.00, οι διαδηλωτές διέκοψαν την κυκλοφορία στο βόρειο τμήμα της οδού Γουάιτχολ.",
+    "Το ρεκόρ του Ναδάλ απέναντι στον Καναδό είναι 7-2."
+   ]
+  },
+  {
+   "code": "heb_Hebr",
+   "name": "Hebrew",
+   "native": "עברית",
+   "script": "Hebrew",
+   "sentences": [
+    "הטייס זוהה כמפקד הטייסת דילוקריט פאטאבי.",
+    "כלי תקשורת מקומיים מדווחים שרכב כיבוי של נמל התעופה התהפך בדרכו לזירה.",
+    "וידל בן ה- 28 הצטרף לברסה לפני שלוש עונות, מסביליה.",
+    "מעט לאחר השעה 11:00, המפגינים חסמו את התנועה צפונה ברחוב וייטהול.",
+    "השיא של נדאל בראש בראש מול הקנדי הוא 7-2."
+   ]
+  },
+  {
+   "code": "arb_Arab",
+   "name": "Arabic",
+   "native": "العربية",
+   "script": "Arabic",
+   "sentences": [
+    "تم التعرف على هوية الطيار وهي \"ديلوكريت باتافي\" قائد سرب الطائرات.",
+    "أعلنت وسائل الإعلام المحلية عن انقلاب إحدى سيارات الإطفاء أثناء توجهها لإطفاء الحريق.",
+    "انضم فيدال والذي يبلغ من العمر 28 عاماً إلى نادي برشلونة قبل ثلاثة مواسم، قادماً من نادي إشبيلية.",
+    "بعد الساعة 11:00 بقليل، قطع المتظاهرون حركة المرور في الطريق المتجه شمالاً في وايتهول.",
+    "سجل تاريخ مواجهات نادال مع الكندي هو 7 – 2."
+   ]
+  },
+  {
+   "code": "pes_Arab",
+   "name": "Persian",
+   "native": "فارسی",
+   "script": "Arabic",
+   "sentences": [
+    "مشخص شد که خلبان رهبر اسكادران، دیلوكریت پاتاوی بوده است.",
+    "رسانه‌های محلی گزارش می‌دهند که یک خودروی آتش نشانی فرودگاه در حالی که عکس‌العمل نشان می‌داد چپ کرده است.",
+    "ویدال 28 ساله سه فصل پیش از باشگاه سِویا به باشگاه بارسا ملحق شده بود.",
+    "درست بعد از ساعت 11:00، معترضین مانع از تردد وسایل نقلیه در باند شمالی وایتهال شدند.",
+    "رکورد امتیاز نادال در مقابل حریف کانادایی 7–2 است."
+   ]
+  },
+  {
+   "code": "urd_Arab",
+   "name": "Urdu",
+   "native": "اردو",
+   "script": "Arabic",
+   "sentences": [
+    "پائلٹ کو اسکواڈرن لیڈر ڈیلوکرٹ پٹاوی کے نام سے شناخت کیا گیا۔",
+    "مقامی میڈیا نے بتایا کہ ہوائی اڈے کی ایک آگ بھجانے والی گاڑی کاروائی کرتے وقت الٹ گئی۔",
+    "28 سالہ ویدال نے سیویلا سے تین سیزن قبل بارسا کو جوائن کیا تھا۔",
+    "بس 11:00 بجے کے بعد احتجاجی مظاہرین نے وائٹ ہال میں نارتھ باؤنڈ کیریئج پر ٹریفک کو بلاک کردیا۔",
+    "کینیڈا کا خلاف نڈال کے رو برو ریکارڈ 7–2 ہے۔"
+   ]
+  },
+  {
+   "code": "hin_Deva",
+   "name": "Hindi",
+   "native": "हिन्दी",
+   "script": "Devanagari",
+   "sentences": [
+    "पायलट की पहचान स्क्वाड्रन लीडर दिलोकृत पटावी के रूप में की गई.",
+    "स्थानीय मीडिया ने बताया है कि कार्रवाई करने के दौरान एयरपोर्ट का अग्निशामक वाहन लुढ़क गया था.",
+    "28 वर्षीय विडाल तीन सीजन पहले सेविला से बारका में शामिल हुए थे।",
+    "ठीक 11:00 बजे के बाद, व्हाइटहॉल में उत्तर की ओर जाने वाले ट्रैफ़िक को प्रदर्शनकारियों ने रोक दिया.",
+    "कनाडियन के खिलाफ नडाल का सीधा रिकॉर्ड 7-2 है।"
+   ]
+  },
+  {
+   "code": "npi_Deva",
+   "name": "Nepali",
+   "native": "नेपाली",
+   "script": "Devanagari",
+   "sentences": [
+    "पाइलटलाई स्क्वाड्रोन नेता डिलोक्रिट पट्टावीको रूपमा पहिचान गरियो।",
+    "स्थानीय मिडियाले प्रतिक्रियाको क्रममा विमानस्थलको अग्नि नियन्त्रक सवारी पल्टिएको सूचना दियो।",
+    "28-वर्ष-उमेरका विडाल सेभिलाबाट तीन सिजनअघि बार्सामा सामेल भए।",
+    "ठिक 11:00 बजेपछि प्रदर्शनकारीहरूले ह्वाइटहलको उत्तरतर्फको बाटोमा सवारी आवागमन अवरुद्ध गरे।",
+    "क्यानाडाली विरुद्ध नाडालको हेड टु हेड रेकर्ड 7-2 छ।"
+   ]
+  },
+  {
+   "code": "ben_Beng",
+   "name": "Bengali",
+   "native": "বাংলা",
+   "script": "Bengali",
+   "sentences": [
+    "পাইলটটি স্কোয়াড্রন লিডার দিলোকৃত পাত্তাভী হিসেবে শনাক্ত হয়েছিল।",
+    "স্থানীয় সংবাদ মাধ্যম জানায়, উদ্ধারে নিযুক্ত বিমানবন্দরের একটি অগ্নি নির্বাপক গাড়ি কাজের সময় উল্টে গেছে।",
+    "২৮ বছর বয়সী ভিদাল ৩ বছর আগে সেভিয়া থেকে বার্সেলোনায় যোগদান করেছিল।",
+    "11:00 টার ঠিক পরে, বিক্ষোভকারীরা হোয়াইটহলের উত্তরদিকগামি যানচলাচল অবরোধ করেছিল।",
+    "কানাডার এই খেলোয়াড়ের বিরুদ্ধে নাদালের মুখোমুখি হওয়ার পরিসংখ্যান হলো ৭-২ ।"
+   ]
+  },
+  {
+   "code": "tam_Taml",
+   "name": "Tamil",
+   "native": "தமிழ்",
+   "script": "Tamil",
+   "sentences": [
+    "விமானி, ஸ்குவாட்ரான் தலைவர் திலோக்ரித் பட்டாவி என அடையாளம் காணப்பட்டார்.",
+    "தீயை அணைக்கச் சென்ற விமான நிலைய தீயணைப்பு வாகனம் கவிழ்ந்ததாக உள்ளூர் செய்தி நிறுவனங்கள் தெரிவித்தன.",
+    "28 வயதான விடல் மூன்று பருவங்களுக்கு முன்பாக, செவில்லாவில் இருந்து பார்காவில் சேர்ந்தார்.",
+    "11:00 மணிக்குப் பின்னர், எதிர்ப்பாளர்கள் ஒயிட்ஹாலில் வடக்கு நோக்கி செல்லும் வண்டிகளின் போக்குவரத்தைத் தடுத்தனர்.",
+    "அந்த கனடா நாட்டவருடன் நடாலின் நேருக்கு நேர் மோதிய சாதனை 7-2 ஆகும்."
+   ]
+  },
+  {
+   "code": "tel_Telu",
+   "name": "Telugu",
+   "native": "తెలుగు",
+   "script": "Telugu",
+   "sentences": [
+    "పైలట్‌ను స్క్వాడ్రన్ లీడర్ దిలోక్రిత్ పట్టావీగా గుర్తించారు.",
+    "స్థానిక మీడియా ప్రతిస్పందిస్తున్నసమయంలో ఒక ఎయిర్ పోర్ట్ ఫైర్ వాహనం దొర్లినట్లు గా నివేదించింది.",
+    "28 ఏళ్ల విడాల్ 3 సీజన్‌ల క్రితం Sevilla నుండి Barçaలో చేరాడు.",
+    "11:00 తరువాత, నిరసనకారులు వైట్‌హాల్‌‌‌లోని నార్త్‌బౌండ్ క్యారేజీపై ట్రాఫిక్‌ను అడ్డుకున్నారు.",
+    "నాదల్ యొక్క హెడ్ టు హెడ్ టు హెడ్ రికార్డ్ కెనడియన్ వ్యతిరేకంగా 7–2."
+   ]
+  },
+  {
+   "code": "sin_Sinh",
+   "name": "Sinhala",
+   "native": "සිංහල",
+   "script": "Sinhala",
+   "sentences": [
+    "බලඝන නායක ඩිලෝක්‍රිට් පටවී ගුවන් නියමුවා බව හඳුනාගෙන ඇත.",
+    "දේශීය මාධ්‍ය වාර්තා කළඒ සම්බන්ධව කටයුතු කරත් දී අතර ගුවන් තොටුපොළ ගිනි නිවන වාහනය පෙරළී ගිය බවයි.",
+    "28 හැවිරිදි විඩාල්, වාර තුනකට පෙර සෙවිලා වෙතින් බර්කා හා එක් විය.",
+    "හුදෙක් 11:00 ට පසු, විරෝධතා දැක්වූවන් වයිට්හෝල් හි උතුරට ගිය වාහනවල ගමනාගමනට බාධා කළෝ ය.",
+    "කැනේඩියානුවන්ට එරෙහිව නඩල්ගේ කරට කර වාර්තාව 7-2 කි."
+   ]
+  },
+  {
+   "code": "tha_Thai",
+   "name": "Thai",
+   "native": "ไทย",
+   "script": "Thai",
+   "sentences": [
+    "นักบินคนดังกล่าวถูกระบุว่าเป็นนาวาอากาศตรีดิลกฤทธิ์ ปัถวี",
+    "ผู้สื่อข่าวท้องถิ่นรายงานว่ารถดับเพลิงประจำสนามบินรีบรุดเข้าไปยังที่เกิดเหตุในทันที",
+    "วิดัลวัย 28 ปี ย้ายจากเซบีญ่ามาเข้าร่วมกับบาร์ซ่าเมื่อสามฤดูกาลก่อน",
+    "หลังเวลา 11.00 น. พอดิบพอดี ผู้ประท้วงปิดกั้นการจราจรบนถนนที่ทอดไปทางทิศเหนือในไวท์ฮอลล์",
+    "สถิติการแข่งเฮด-ทู-เฮดของนาดาลกับผู้เล่นชาวแคนาดาคือ 7-2"
+   ]
+  },
+  {
+   "code": "mya_Mymr",
+   "name": "Burmese",
+   "native": "မြန်မာ",
+   "script": "Myanmar",
+   "sentences": [
+    "လေယာဉ်မှူးသည် လေယာဉ်အုပ်စုခေါင်းဆောင် ဒီလိုကာ့တ်ပက်တာဗီး ဖြစ်သည်ဟု ဖော်ထုတ်နိုင်ခဲ့သည်။",
+    "လေဆိပ်မီးသတ်ယာဉ်သည် မီးသတ်နေစဉ် မှောက်သွားခဲ့သည်ဟု ဒေသတွင်းမီဒီယာမှ အစီရင်ခံထားပါသည်။",
+    "အသက် ၂၈ ရှစ်နှစ်အရွယ် ဗီဒယ်လ်သည် လွန်ခဲ့သော သုံးရာသီတွင် ဆီဗီးလားမှ ဘာကာသို့ ပြောင်းလာခဲ့သည်။",
+    "၁၁:၀၀ ထိုးပြီးကာစတွင် ဆန္ဒပြသူများသည် ဝှိုက်ဟောလ် ရှိ မြောက်ပိုင်းသွားရထားပေါ်တွင် အသွားအလာကို ပိတ်ဆို့ထားလိုက်ကြသည်။",
+    "နေဒယ်၏ ကနေဒီးယန်း နှင့် ထိပ်တိုက်ရင်ဆိုင်မှုမှတ်တမ်းမှာ ၇-၂ ဖြစ်သည်။"
+   ]
+  },
+  {
+   "code": "khm_Khmr",
+   "name": "Khmer",
+   "native": "ខ្មែរ",
+   "script": "Khmer",
+   "sentences": [
+    "អ្ន​ក​បើក​យន្ត​ហោះ​នោះត្រូវ​បាន​គេ​កំណត់​អត្តសញ្ញាណ​បាន​ថា​ឈ្មោះ​ Squadron Leader Dilokrit Pattavee។",
+    "សារព័ត៌មានក្នុងស្រុករាយការណ៍ថាអាកាសយានដ្ឋានមួយកន្លែងត្រូវភ្លើងឆេះរថយន្តពន្លត់អគ្គិភ័យកំពុងអន្តរាគមន៍។",
+    "អាយុ 28 ឆ្នាំ វីដាល (Vidal) បានចូលរួមជាមួយក្រុមបាកា (Barça) កាលពីបីរដូវកាលមុន ដោយចេញពីក្រុមសេវីឡា (Sevilla) ។",
+    "បន្ទាប់ពីម៉ោង 11:00 ក្រុមអ្នកតវ៉ាបានបិទច​រាចរណ៍នៅលើផ្លូវទៅទិសខាងជើង ក្នុង  វ៉ៃថ៍ហល(Whitehall)។",
+    "កំណត់ត្រារបស់ Nadal ប្រឆាំងនឹងជនជាតិកាណាដា គឺ 7–2។"
+   ]
+  },
+  {
+   "code": "amh_Ethi",
+   "name": "Amharic",
+   "native": "አማርኛ",
+   "script": "Ethiopic",
+   "sentences": [
+    "የአውሮፕላን አብራሪው የአየር ሀይል መሪ ዲሎክሪት ፓታቪ ሆኖ ተለይቷል።",
+    "የአካባቢው መገናኛ ብዙሐን እንደዘገበው አንድ የአየር ማረፊያ የእሳት አደጋ ተሽከርካሪ በስራ ላይ እንዳለ ተገልብጧል።",
+    "የ28 አመቱ ቪዳል ከሲልቪያ ባርሳን ከሶስት አመት በፊት ተቀላቅሏል።",
+    "ከ11፡00 በኋላ፣ ተቃዋሚዎች በዋይትሆል ውስጥ ወደ ሰሜን በሚሄደው ጋሪ ላይ መንገድ ዘጉ።",
+    "ናዳል ከካናዳዊው ጋር ያለው የፍጥጫ ክብረ ወሰን 7-2 ነው።"
+   ]
+  },
+  {
+   "code": "cmn_Hans",
+   "name": "Chinese (Simplified)",
+   "native": "中文",
+   "script": "Han",
+   "sentences": [
+    "涉事飞行员是空军中队长迪罗里·帕塔维 (Dilokrit Pattavee)。",
+    "当地媒体报道，一辆机场消防车在响应火警时翻了车。",
+    "三个赛季前，28岁的比达尔（Vidal）从塞维利亚队加盟巴萨。",
+    "11 点刚过，抗议者便堵住了白厅北行车道的交通。",
+    "纳达尔（Nadal）与加拿大人的交手记录是 7-2。"
+   ]
+  },
+  {
+   "code": "jpn_Jpan",
+   "name": "Japanese",
+   "native": "日本語",
+   "script": "Han",
+   "sentences": [
+    "操縦士は中隊長のディロクリット・パタヴェー氏であることが確認されました。",
+    "地元メディアの報道によると、空港の消防車が対応中に横転したということです。",
+    "28歳のビダル選手は、3シーズン前にセビージャから移籍してバルサに所属していました。",
+    "11時すぎちょうどに抗議者たちはホワイトホールの北行き車両の交通を遮断しました。",
+    "ナダルの対カナダ戦の戦績は7-2です。"
+   ]
+  },
+  {
+   "code": "kor_Hang",
+   "name": "Korean",
+   "native": "한국어",
+   "script": "Hangul",
+   "sentences": [
+    "그 조종사는 비행 중대장 딜로크리트 패타비로 확인되었다.",
+    "현지 언론은 공항 소방차가 사고에 대응하는 도중에 전복되었다고 보도했습니다.",
+    "28세인 비달은 3년 전 세비야 FC에서 FC 바르셀로나에 합류했습니다.",
+    "11시가 막 지난 후, 시위대는 화이트홀에 있는 북쪽으로 향하는 마차들의 교통을 막았다.",
+    "나달과 이 캐나다 선수와의 정면 대결 기록은 7 대 2입니다."
+   ]
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 import { ApiError, type ApiErrorBody, type ModelsResponse, type RepeatedSpec, type RunResponse, type TokenizeResponse } from "./types";
 
-async function jsonRequest<T>(path: string, init?: RequestInit): Promise<T> {
+export async function jsonRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },

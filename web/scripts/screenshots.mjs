@@ -10,7 +10,8 @@
 // (a theme-attribute ordering hazard), and the linked band painting over
 // cells that causal masking makes impossible.
 //
-// Requires both dev servers: uvicorn on :8000 and vite on :5173.
+// Requires both dev servers: uvicorn on :8000 and vite on :5173. Covers the
+// attention lab (01-11) and the tokenizer lab + home page (20-26).
 
 import { chromium } from "playwright";
 const OUT = process.argv[2] ?? ".screenshots";
@@ -26,7 +27,7 @@ page.on("requestfailed", (r) => problems.push(`[requestfailed] ${r.url()} ${r.fa
 
 const shot = async (name, opts = {}) => { await page.screenshot({ path: `${OUT}/${name}.png`, ...opts }); console.log("shot:", name); };
 
-await page.goto("http://127.0.0.1:5173/", { waitUntil: "networkidle" });
+await page.goto("http://127.0.0.1:5173/attention", { waitUntil: "networkidle" });
 await page.waitForSelector(".chip", { timeout: 20000 });
 await page.waitForFunction(() => document.querySelectorAll("canvas").length > 0, null, { timeout: 20000 });
 await page.waitForTimeout(600);
@@ -82,6 +83,9 @@ await shot("09-phone", { fullPage: true });
 const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 console.log("horizontal overflow at 390px:", overflow, "px (expect 0)");
 
+// The two URLs below are deliberately the pre-labs "/?model=…" form: main.tsx
+// must move them to /attention, and these shots fail if it doesn't.
+//
 // A script the tokenizer has no merges for. Byte-level BPE spends 2-3 tokens
 // per character here, none of which decodes to a character on its own; this
 // checks the strip shows the text rather than a row of U+FFFD.
@@ -124,6 +128,39 @@ if (geo.bandBottom !== null && (geo.bandBottom > geo.canvasBottom + 1 || geo.ban
   problems.push("the linked band is drawn outside the canvas");
 }
 await shot("11-long-prompt", { fullPage: true });
+
+// --- Tokenizer lab (step 1) and the path overview -------------------------
+await page.goto("http://127.0.0.1:5173/", { waitUntil: "networkidle" });
+await shot("20-home", { fullPage: true });
+
+const nepali = encodeURIComponent("नेपाल एक सुन्दर देश हो।");
+await page.goto(`http://127.0.0.1:5173/tokens?tok=gpt2&text=${nepali}`, { waitUntil: "networkidle" });
+await page.waitForSelector(".cluster--frag", { timeout: 60000 });
+await page.locator(".chip").nth(1).hover();
+await page.waitForTimeout(300);
+await shot("21-toklab-inspect", { fullPage: true });
+const tokClean = await page.evaluate(() => !document.querySelector(".chipstrip")?.textContent?.includes("\uFFFD"));
+if (!tokClean) problems.push("tokenizer lab rendered a replacement character");
+
+for (const [tab, sel, name] of [
+  ["Compare", ".compare__row", "22-toklab-compare"],
+  ["Languages", ".langtable", "23-toklab-languages"],
+  ["BPE step-through", ".symrow", "24-toklab-bpe"],
+  ["Vocabulary", ".ranked__row--button", "25-toklab-vocab"],
+]) {
+  await page.getByRole("tab", { name: tab }).click();
+  await page.waitForSelector(sel, { timeout: 60000 });
+  await page.waitForTimeout(500);
+  await shot(name, { fullPage: true });
+}
+
+await page.setViewportSize({ width: 390, height: 900 });
+await page.getByRole("tab", { name: "Languages" }).click();
+await page.waitForTimeout(500);
+const tokOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+console.log("tokenizer lab horizontal overflow at 390px:", tokOverflow);
+if (tokOverflow > 0) problems.push(`tokenizer lab overflows horizontally by ${tokOverflow}px at 390px`);
+await shot("26-toklab-phone", { fullPage: true });
 
 console.log("\nURL:", page.url());
 console.log("\n=== console/network problems ===");
