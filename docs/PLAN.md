@@ -401,6 +401,12 @@ and essentially cannot find any other way.
 Same prompt in English vs Devanagari shows the expected fragmentation difference; comparison view
 renders both.
 
+> **Update 2026-09-25.** The tokenization half of this stage has shipped early, as the **Tokenizer
+> lab** (`/tokens`, step 1 of the path; D13, D14). It covers the curated parallel prompts (FLORES+, 32
+> languages), the side-by-side comparison, and the fragmentation ratio, across 9 tokenizers including
+> BLOOM's and Qwen's. What remains here is the *model* side: loading a multilingual model into the
+> attention lab and comparing induction scores across languages.
+
 ---
 
 ## Stage 4 — Ship

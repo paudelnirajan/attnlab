@@ -466,3 +466,94 @@ tokenization paths must never be able to silently disagree.
 fix for a user who wants to study their own language is a tokenizer with merges for that script —
 `Qwen2.5-0.5B` per Stage 3, still unverified under Mode B (see the D1 amendment). Until such a model
 is in `models.yaml` and verified, the notice deliberately does not name one.
+
+---
+
+## D13 — Labs, not one page: each feature is a stop on one learning path
+
+**Status:** locked · **Decided:** 2026-09-25, when the tokenizer playground was added
+
+The app was a single attention viewer at `/`. It is now a set of **labs**, one per question, in
+path order. The catalogue lives in `web/src/labs/registry.ts`:
+
+| Step | Lab | Path | Question |
+|---|---|---|---|
+| 1 | Tokenizer lab | `/tokens` | What does the model actually read? |
+| 2 | Attention patterns | `/attention` | Where does each token look? |
+| 3 | Induction heads | planned | How does a model copy what it has seen? |
+| 4 | Logit lens | planned | When does the model know the answer? |
+| 5 | Ablation & attribution | planned | Which components actually matter? |
+
+**Why separate pages.** Each lab has its own controls, its own URL state and its own teaching text.
+Put together on one page they would compete for the same space and the same keyboard shortcuts. A
+lab that answers one question can be linked, bookmarked and taught from.
+
+**Why one path rather than independent tools.** The "continuous learning" requirement is met by
+three mechanisms, all cheap:
+
+1. **Hand-offs carry state.** Every lab links to its neighbour with the *same text* and a model that
+   reads the same vocabulary. The tokenizer lab offers "see how gpt2-small attends over exactly these
+   tokens". The attention lab's token strip offers "why these pieces? Tokenizer lab" and passes its
+   `model`, which the tokenizer lab resolves to that model's tokenizer through `tokenizers.yaml`'s
+   `models` field.
+2. **Every lab ends with a PathNav** naming the step before and after it. A planned lab appears in the
+   path but is not linked.
+3. **The home page (`/`) is the path**, with one card per lab saying what it answers and teaches.
+
+**Routing is plain links**, not a client router. Each lab hydrates its own store from its own URL,
+which is exactly what a copied permalink does anyway, so full page navigation costs nothing and
+removes a class of state-leak bugs between labs. Old attention permalinks (`/?model=…&prompt=…`) are
+moved to `/attention` in `main.tsx` before anything reads the URL, and `npm run shots` still loads
+two of them in that old form to prove it.
+
+**Adding a lab** means an entry in `registry.ts`, a route in `main.tsx`, and a directory under
+`web/src/labs/<id>/` with its own store and views.
+
+---
+
+## D14 — The tokenizer lab: tokenizers only, exact bytes, verified replays, FLORES+
+
+**Status:** locked · **Decided:** 2026-09-25
+
+**Tokenizers load without their models.** `toklab.py` loads through `AutoTokenizer` into its own
+cache, which sits outside the model zoo, the RAM budget and the forward-pass semaphore. A tokenizer
+is a few MB and takes about 1 s to load. That lets the lab compare nine tokenizers, including GPT-4o's
+and Qwen's, whose models this app could never host. `tokenizers.yaml` says honestly when an entry is
+a community conversion (`source: port`) rather than the owner's own files.
+
+**Byte provenance is exact, not inferred.** For every tokenizer that reproduces its input
+byte-for-byte (byte-level BPE, and SentencePiece BPE apart from the ▁ it prepends), each token's bytes
+are recovered from its vocabulary string. A token is a fragment when it starts or ends inside a UTF-8
+character, which is a fact about bytes. D12's offset-overlap heuristic is kept only as the fallback
+for tokenizers that rewrite the text first (BERT lowercases and strips accents; XLM-R collapses
+whitespace). Those are reported as **not lossless**, which is itself a lesson: BERT-uncased turns
+`नेपाल` into `नपाल`, because its accent stripping removes Devanagari vowel signs.
+
+**The BPE step-through is checked, not illustrated.** The lab replays the merges itself and compares
+the result to the real Rust tokenizer, word by word. The UI shows a mismatch as a mismatch.
+`tests/test_toklab.py` checks the replay on a mixed corpus for every registered tokenizer. The
+replay matched on the first try for all nine (40+ pre-tokens each, including Devanagari, CJK, emoji
+ZWJ sequences, digits and code).
+
+**Cross-language numbers come from FLORES+, not from our own translations** (D7, extended). The
+Languages view uses 5 sentences in 32 languages from `openlanguagedata/flores_plus`. These are
+professional translations of the same English source, so a ×16 token premium for Burmese under GPT-2
+belongs to the tokenizer, not the translator. `scripts/build_flores_sample.py` regenerates the excerpt.
+It is CC BY-SA 4.0 and the attribution is shown next to the table.
+
+**Rejected:**
+
+| Option | Why not |
+|---|---|
+| Tokenize through `HookedTransformer` like `/tokenize` does | Loads the whole model just to get its tokenizer, and only offers the 5 models we host |
+| Illustrative BPE animation not tied to the real merges | A teaching tool that says "this is how the word was built" has to be true for the word on screen |
+| Hand-written example translations | Translation quality would confound exactly the comparison being made (D7's argument) |
+| Show only token counts per language | The Vocabulary view's script breakdown is the *why*: GPT-2 has one Devanagari token out of 50,257 |
+
+**Found while building it**, and now taught in the lab rather than hidden:
+
+- **GPT-2's pre-tokenizer regex cuts Devanagari words at every vowel sign** (`\p{L}` excludes
+  combining marks), so no merge could ever rebuild the word.
+- **Typing `<|endoftext|>` produces the real special token** (id 50256).
+- **The longest GPT-2 tokens that contain letters are the known glitch tokens**
+  (`rawdownloadcloneembedreportprint`, ` RandomRedditorWithNo`, mojibake runs).

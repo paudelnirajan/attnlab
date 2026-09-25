@@ -280,6 +280,47 @@ v1.1 decision gated on Stage 0a's RAM headroom. When it lands:
 
 ---
 
+## Tokenizer lab — `GET /api/tokenizers`, `POST /api/toklab/*`
+
+The Tokenizer lab (`/tokens` in the frontend) runs on **tokenizers only**. They come from
+`src/attnlab/tokenizers.yaml` (data, not code, like `models.yaml`), load through `AutoTokenizer`
+into their own process-wide cache, and never touch the model zoo. So none of these endpoints take the
+forward-pass semaphore: tokenizing takes milliseconds and must not queue behind a forward pass.
+The first use of a tokenizer downloads it (a few MB), so that first request can take a second or two.
+
+| Endpoint | Body / query | Returns |
+|---|---|---|
+| `GET /api/tokenizers` | — | registry entries: `id, label, hf_name, algorithm, year, source, models, blurb, loaded` |
+| `POST /api/toklab/analyze` | `{"tokenizers": [...1-6], "text": "...", "add_special_tokens": false}` | `results[]`: `tokens`, `stats`, `decoded`, `pipeline` per tokenizer |
+| `POST /api/toklab/trace` | `{"tokenizer": "gpt2", "text": "..."}` (≤ 2000 chars) | per pre-token: `initial`, `steps[]`, `final`, `actual`, `verified` |
+| `POST /api/toklab/count` | `{"tokenizers": [...≤12], "texts": [...≤64]}` | `texts[]` stats and `results[].counts[]`, special tokens excluded |
+| `GET /api/toklab/vocab` | `?tokenizer=` | size, merges, kinds, `by_script`, `longest`, `special` |
+| `GET /api/toklab/vocab/search` | `?tokenizer=&q=&script=&limit=` | case-insensitive match on what each token *spells*; integer `q` = id lookup |
+
+`algorithm` is one of `byte-bpe`, `sp-bpe`, `wordpiece`, `unigram`. `models` lists the attnlab model
+ids that read exactly this vocabulary; the lab uses it to hand text to the attention lab.
+
+Each token in `analyze` carries:
+
+- `id`, `piece` (the raw vocabulary string: `Ġ`, `▁`, `##`), `display` (render-safe: `·` for a space,
+  `⟨U+200B⟩` for invisible characters, and `⋯` on the second and later tokens of one split character).
+- `text` (what the token spells on its own, or `null` for half a character) and `byte_hex`.
+- `start`/`end` (character offsets into the input), `kind` (`piece | byte | special | unk | added`).
+- `rank` (the BPE merge that created the piece) or `score` (its Unigram log-probability).
+- `cluster`, `cluster_size`, `cluster_index`, `cluster_text`, with the same meaning as in `/tokenize`.
+
+`stats` has four lengths of the same text (`n_graphemes`, `n_chars`, `n_bytes`, `n_tokens`) plus
+`n_fragment_tokens`, `n_byte_tokens`, `n_unk`, `n_special`, `n_inserted`, `lossless` (every byte is
+accounted for by the tokens' own bytes) and `roundtrip` (`decode(encode(text)) == text`).
+
+`pipeline` lists the normalizer and pre-tokenizer components, the split regex, the model type and
+merge count, the normalized text, and the pre-tokens.
+
+Errors: `unknown_tokenizer` (404), `tokenizer_unavailable` (503: the Hub was unreachable or refused
+on first load), `text_too_long` (422: more than 20,000 characters), and `invalid_request` (422).
+
+---
+
 ## Endpoint summary
 
 | Endpoint | Stage | Response |
@@ -292,3 +333,6 @@ v1.1 decision gated on Stage 0a's RAM headroom. When it lands:
 | `POST /api/head-scores` | 2 | JSON |
 | `POST /api/ablate` | 2 | JSON |
 | `POST /api/translate` | 3+ | JSON, deferred |
+| `GET /api/tokenizers` | tokenizer lab | JSON |
+| `POST /api/toklab/analyze` · `/trace` · `/count` | tokenizer lab | JSON |
+| `GET /api/toklab/vocab` · `/vocab/search` | tokenizer lab | JSON |

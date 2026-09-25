@@ -12,6 +12,35 @@ yet — see `docs/PLAN.md` for the full roadmap.
 
 ## What it does today
 
+attnlab is a set of **labs**, one per question, meant to be walked in order. Each one links to the
+next with the same text (`docs/03-decisions.md` D13). Open `http://127.0.0.1:5173/` for the path.
+
+| Step | Lab | URL |
+|---|---|---|
+| 1 | **Tokenizer lab**: what does the model actually read? | `/tokens` |
+| 2 | **Attention patterns**: where does each token look? | `/attention` |
+| 3–5 | Induction heads, logit lens, ablation | planned |
+
+### Tokenizer lab
+
+It runs on tokenizers alone, with no model loaded, across 9 tokenizers: GPT-2, GPT-NeoX/Pythia,
+BLOOM, Qwen 2.5, Llama 2, GPT-4's cl100k, GPT-4o's o200k, BERT and XLM-R. Its five views:
+
+- **Inspect**
+  - Token chips shown as text, ids, bytes or raw vocabulary strings.
+  - Hover a token for its bytes, the merge that made it, and where it came from in your text.
+  - Four lengths of the same text: characters you see, code points, bytes, tokens.
+  - The full normalize → pre-tokenize → model → ids pipeline.
+  - A gallery of 16 quirks, including leading spaces, digits, NFC/NFD, homoglyphs, glitch tokens and
+    special-token injection.
+- **Compare**: one text through up to six tokenizers, stacked.
+- **Languages**: the same FLORES+ sentences in 32 languages, with each tokenizer's premium over
+  English. Under GPT-2, Burmese costs ×16.
+- **BPE step-through**: replays the real merges one at a time, checked against the real tokenizer.
+- **Vocabulary**: search, and how many tokens each script got. GPT-2 has one Devanagari token.
+
+### Attention patterns
+
 - Type a prompt, pick a model, see per-layer/per-head attention heatmaps render
   live, backed by a real `HookedTransformer` forward pass
 - Toggle between reading a head as "where does this token look *from*"
