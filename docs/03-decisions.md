@@ -557,3 +557,71 @@ It is CC BY-SA 4.0 and the attribution is shown next to the table.
 - **Typing `<|endoftext|>` produces the real special token** (id 50256).
 - **The longest GPT-2 tokens that contain letters are the known glitch tokens**
   (`rawdownloadcloneembedreportprint`, ` RandomRedditorWithNo`, mojibake runs).
+
+---
+
+## D15 — The logit lens lab: one kept forward pass, two lenses, exact attribution
+
+**Status:** locked · **Decided:** 2026-09-26, building step 4 from a PyTorch notebook
+(`logit_lens_pytorch.ipynb`, ARENA-style) that the lab reproduces number for number
+
+**What it is.** `/logit-lens` decodes the residual stream at every sub-layer (embedding, after each
+attention, after each MLP) and shows it five ways: the **grid** (rows × positions, colour by top-1
+probability, P(actual next), rank of the actual next token, rank of the final answer, entropy, or KL
+to the output); a **trajectory** for one position with tracked tokens and a logit-difference curve;
+**direct logit attribution** by layer and by head, with a running total and each component's
+top promoted and suppressed tokens; **per-layer averages** for every lens at once (agreement, loss,
+KL, entropy, residual norm); and **under the hood**: the computation with this run's shapes, the
+recomputed checks, and why the plain lens fails.
+
+**One forward pass, kept.** `/lens/run` stores the residual rows, per-head `z` and the logits
+(~5 MB for gpt2-small at 25 tokens, ~50 MB at 256; ~130 MB for gpt2-medium at 256). The logits themselves are not kept: they are recomputed from the last row, which the first anchor check proves is exact, and keeping them would cost more than the stream (51 MB at 256 tokens), and every other view is products against them.
+Switching lens, view or position never runs the model. The full lens tensor (`rows × seq × d_vocab`)
+is never materialised or sent: 25 × 256 × 50,257 floats is 1.3 GB. The server walks it one row at a
+time and sends summaries.
+
+**The plain lens without a second model.** The zoo loads with TransformerLens's default processing,
+which folds `ln_final.w, b` into `W_U` and centres it. The notebook's plain lens needs the raw `W_U`.
+Loading an unprocessed copy would double RAM (D1). Instead `LensReadyTransformer` (a
+`HookedTransformer` subclass whose only override is `load_and_process_state_dict`) sees the raw state
+dict on its way in and keeps `w`, `b`, the raw `b_U`, and one vocab-sized vector `m`. Folding stores
+`W_U′ = w ⊙ W_U − m − k`, with `m` per vocab entry and `k` per dimension, so
+`n · W_U = (n / w) · W_U′ + (Σ n/w) · m + const` and the constant changes no probability or rank.
+The residual of that algebra is measured at load time (6e-7 relative on gpt2) and reported as a
+check. `tests/test_lens.py` proves two things: (a) the loaded weights are bit-identical to
+`HookedTransformer.from_pretrained`, so no other lab changes, and (b) both lenses match the
+notebook's hand computation on `from_pretrained_no_processing`. The notebook's headline numbers are
+test assertions: 17% plain-lens agreement at the last block, and ' plasma' at rank 2 after block 8
+and rank 1 from block 9 under ln_final.
+
+**Attribution is exact, and says what it is not.** With ln_final's scale fixed at its real value for
+the position, the logit is linear in the stream, so the per-component split sums to the model's
+logit. The UI shows the sum and its error, and says in words that this is a decomposition, not a
+counterfactual: removing a component would change the scale and everything that read it later.
+That is ablation's question (step 5), so the registry's step 5 no longer lists direct logit
+attribution.
+
+**Honest by construction:**
+
+- The output row is the model's own logits, drawn apart and labelled "not a lens".
+- A parallel block's "after attention" row is marked `*`: the model never forms it.
+- A model with no final norm (attn-only-2l-demo) offers one lens, labelled `W_U · x (no norm)`, not
+  "ln_final".
+- Predicted byte fragments get context-aware labels (D12 extended): the same token id reads `⋯न`
+  after an input ending in `e0 a4`, and `ऄ–ऽ⋯` elsewhere.
+- Tracking a string that is several tokens says so and tracks the first.
+
+**Rejected:**
+
+| Option | Why not |
+|---|---|
+| Load models unprocessed for everyone | Changes every logit the attention lab shows (center_unembed) away from ARENA's numbers (D3) |
+| A second, unprocessed copy for the plain lens | Doubles RAM for one normalization choice |
+| Send full lens logits and compute in the browser | 1.3 GB at the length limit |
+| Tuned lens | Needs trained per-layer translators per model; noted as a follow-up |
+| Attribution with a recomputed (per-component) LayerNorm scale | No longer sums to the logit, and is still not causal |
+
+**Found while building it.** gpt2-small completes "The Eiffel Tower is located in the city of" with
+' London' over ' Paris' (with BOS). The fact example says so rather than pick a prompt that flatters
+the model. On IOI, attribution recovers the published picture unprompted: L9H6 and L9H9 push toward
+' Mary' by about +2.1 each, and L10H7 pushes back (−2.3), as the negative name mover.

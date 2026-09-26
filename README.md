@@ -7,8 +7,9 @@ type a prompt, pick a model, and see what every attention head does. Inspired by
 ("Intro to Mech Interp"): no more open-Colab-wait-edit-cell-rerun loop.
 
 **Status:** Stages 0a–1 complete (measurement harness, backend API, frontend
-viewer). The induction lab (head scoring, ablation) from Stage 2 is not built
-yet — see `docs/PLAN.md` for the full roadmap.
+viewer), plus the tokenizer and logit lens labs. The induction lab (head
+scoring, ablation) from Stage 2 is not built yet — see `docs/PLAN.md` for the
+full roadmap.
 
 ## What it does today
 
@@ -19,7 +20,9 @@ next with the same text (`docs/03-decisions.md` D13). Open `http://127.0.0.1:517
 |---|---|---|
 | 1 | **Tokenizer lab**: what does the model actually read? | `/tokens` |
 | 2 | **Attention patterns**: where does each token look? | `/attention` |
-| 3–5 | Induction heads, logit lens, ablation | planned |
+| 3 | Induction heads | planned |
+| 4 | **Logit lens**: when does the model know the answer? | `/logit-lens` |
+| 5 | Ablation & attribution | planned |
 
 ### Tokenizer lab
 
@@ -38,6 +41,30 @@ BLOOM, Qwen 2.5, Llama 2, GPT-4's cl100k, GPT-4o's o200k, BERT and XLM-R. Its fi
   English. Under GPT-2, Burmese costs ×16.
 - **BPE step-through**: replays the real merges one at a time, checked against the real tokenizer.
 - **Vocabulary**: search, and how many tokens each script got. GPT-2 has one Devanagari token.
+
+### Logit lens
+
+One forward pass per text; the residual stream is kept, so every view below is instant. Reproduces
+the plain-PyTorch notebook it was built from number for number (`tests/test_lens.py`, D15).
+
+- **Lens**: rows = the stream after the embedding and after every attention and MLP sub-layer,
+  columns = positions, top row = the model's real output. Colour by top-1 probability, P(actual
+  next), rank of the actual next token, rank of the final answer, entropy, or KL to the output.
+  Hover for the top 5, click for the detail.
+- **Two lenses**: `ln_final` (the model's own final LayerNorm) and plain normalization, whose
+  failure is the lesson. `Under the hood` shows the few huge residual dimensions ln_final learned to
+  mute.
+- **Trajectory**: one position through every layer, with rank and probability curves for the actual
+  next token, the final answer and up to four tokens you type, plus a logit-difference curve.
+- **Attribution**: the output logit (or `logit(A) − logit(B)`) split exactly into embeddings, every
+  head, each attention bias and each MLP, with a running total and what each component pushes up
+  and down over the whole vocabulary. On IOI it recovers the name movers (L9H6, L9H9) unprompted.
+- **Layers**: agreement with the output, loss, KL, entropy and residual norm per layer, for both
+  lenses.
+- **Under the hood**: the computation with this run's real shapes, and five checks recomputed on
+  every run (the lens reproduces the logits, the stream is a sum, heads sum to `attn_out`, …).
+- Honest labels for predicted byte fragments: `⋯न` finishes a character, `ऄ–ऽ⋯` means "some
+  Devanagari character, letter not yet chosen".
 
 ### Attention patterns
 

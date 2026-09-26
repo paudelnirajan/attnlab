@@ -321,6 +321,59 @@ on first load), `text_too_long` (422: more than 20,000 characters), and `invalid
 
 ---
 
+## Logit lens — `POST /api/lens/*`
+
+The Logit lens lab (`/logit-lens` in the frontend, `src/attnlab/lens.py`, D15). `POST /lens/run` runs
+the model **once** and keeps its residual stream for ~10 minutes, like `/run` keeps attention
+patterns. The server keeps at most 4 lens runs, and each holds every sub-layer row, the attention and MLP
+outputs, and per-head `z`. Every other endpoint is matrix products against that stored run. They still read
+the model's weights (`W_U`, `W_O`), so all of them take the forward-pass semaphore (D6). A
+`run_not_found` means the run expired, and the frontend's answer is to call `/lens/run` again.
+
+| Endpoint | Body | Returns |
+|---|---|---|
+| `POST /api/lens/run` | `{"model", "text", "lens": "ln_final"\|"plain", "prepend_bos": true}` | `run_id`, `lenses` (available for this model), `tokens` (as `/tokenize`), the grid summary below, `checks[]`, `anatomy`, `stored_mb` |
+| `POST /api/lens/view` | `{"run_id", "lens"}` | the grid summary under another lens; no forward pass |
+| `POST /api/lens/layers` | `{"run_id"}` | per row, per lens, averaged over positions: `agree_final`, `agree_next`, `ce_next`, `kl_final`, `entropy`, `p_next`; plus `norm_mean`, `norm_max`, `norm_mean_excl_first` |
+| `POST /api/lens/position` | `{"run_id", "pos", "lens", "k" ≤ 25, "track": [str ≤ 6], "track_ids": [int]}` | `top[row][k]` `{id, label, prob}`; `tracked[]` with `logit`, `prob`, `rank` per row; `resolved[]` (string → first token id, with a `note` when it was several tokens) |
+| `POST /api/lens/attribution` | `{"run_id", "pos", "target"\|"target_str", "contrast"\|"contrast_str"}` | `components[]` (`embed`, `pos`, every head, each layer's `b_O`, each MLP) with `value` and, for the decoded ones, `top_up`/`top_down`; `bias`, `total`, `actual`, `error`, `scale`, `notes` |
+
+**Rows.** `rows[]` lists every point read, bottom to top: `blocks.0.hook_resid_pre` (the embedding),
+then per layer `hook_resid_mid` (`kind: "attn"`) and `hook_resid_post` (`kind: "mlp"`, `block_end:
+true`). An attention-only model has one row per layer. In a parallel block (Pythia) the "after
+attention" row is `resid_pre + attn_out`, which the model never forms, so it is flagged `real:
+false`. Every array is then extended by one final row, `{"id": "logits", "kind": "output"}`: the
+model's real output, which is not a lens.
+
+**The grid summary** (`/lens/run` and `/lens/view`):
+
+- `strings[]`: `{id, label}` pairs that cells point into, deduplicated. `label` is context-aware for
+  byte fragments. `⋯न` finishes a character the input started, `ऄ–ऽ⋯` is a character whose first
+  bytes are chosen but whose letter is not, and bare hex is an orphan continuation byte (D12's
+  convention, extended to predictions).
+- `input_labels[]`, `next_labels[]` (`null` at the last position), `final_top[]` (index into `strings`).
+- `cells`, each `[row][pos]`: `top` (5 string indices), `top_p`, `p_next`, `rank_next` (both `null`
+  at the last position), `p_final`, `rank_final` (the output row's #1), `entropy` (nats), `kl`
+  (`KL(output ‖ row)`, nats), `norm` (`null` on the output row). Probabilities are rounded to 4
+  significant digits.
+
+**`checks[]`** are recomputed on every run: the `ln_final` lens on the last row reproduces the
+logits; `embed + pos + Σ attn_out + Σ mlp_out` is the final residual; heads plus `b_O` are
+`attn_out`; row 0 is the embedding; and, for folded models, the plain lens's reconstruction residual.
+Each has `{id, label, ok, value, detail}`.
+
+**Attribution** decomposes the logit at the model's real output, whatever lens is selected. With
+ln_final's scale held at its actual value for that position, the split is exact: `Σ value + bias =
+actual`, and `error` reports the difference. Without `target`, it explains the actual next token, or
+the model's #1 at the last position. For models with more than 48 heads, only the 48 largest by
+`|value|` get `top_up`/`top_down`.
+
+Errors: `seq_too_long` (422: more than 256 tokens, or the model's `max_seq`), `run_not_found`
+(404), `invalid_request` (422: `pos` past the end, a lens this model lacks, target = contrast, token
+id out of range).
+
+---
+
 ## Endpoint summary
 
 | Endpoint | Stage | Response |
@@ -336,3 +389,4 @@ on first load), `text_too_long` (422: more than 20,000 characters), and `invalid
 | `GET /api/tokenizers` | tokenizer lab | JSON |
 | `POST /api/toklab/analyze` · `/trace` · `/count` | tokenizer lab | JSON |
 | `GET /api/toklab/vocab` · `/vocab/search` | tokenizer lab | JSON |
+| `POST /api/lens/run` · `/view` · `/layers` · `/position` · `/attribution` | logit lens lab | JSON |

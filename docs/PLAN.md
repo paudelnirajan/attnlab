@@ -443,7 +443,7 @@ measured and stated honestly.
 
 | Feature | Verdict |
 |---|---|
-| Logit lens / direct logit attribution | **Later** — natural Stage 5, high value for the same audience |
+| Logit lens / direct logit attribution | **Built** as lab step 4, `/logit-lens` (D15) |
 | OV/QK circuits, eigenvalue copying score | **Later** — the back half of ARENA 1.2, strong follow-up |
 | Composition scores (Q/K/V) between heads | Later, pairs with the above |
 | Two-model comparison view | Later |
