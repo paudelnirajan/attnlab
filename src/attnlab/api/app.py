@@ -14,7 +14,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from attnlab.api import routes, toklab_routes
+from attnlab.api import lens_routes, routes, toklab_routes
 from attnlab.api.errors import ApiError
 from attnlab.api.state import AppState
 from attnlab.toklab import TokenizerUnavailableError, UnknownTokenizerError
@@ -31,6 +31,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 app = FastAPI(title="attnlab API", lifespan=lifespan)
 app.include_router(routes.router, prefix="/api")
 app.include_router(toklab_routes.router, prefix="/api")
+app.include_router(lens_routes.router, prefix="/api")
 
 
 def _error_response(status_code: int, code: str, message: str, detail: dict[str, Any] | None = None) -> JSONResponse:

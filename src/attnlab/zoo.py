@@ -31,6 +31,7 @@ from dataclasses import dataclass, field
 
 from transformer_lens import HookedTransformer
 
+from attnlab.lens import LensReadyTransformer
 from attnlab.registry import ModelSpec, load_registry
 from attnlab.settings import SETTINGS
 
@@ -128,7 +129,10 @@ class ModelZoo:
             # to a silent OOM if that invariant is ever broken.
             raise BudgetExceededError(model_id, spec.est_ram_mb, self.budget_mb)
 
-        model = HookedTransformer.from_pretrained(
+        # Identical to HookedTransformer.from_pretrained (same processing, same
+        # weights), but it also records the raw ln_final weights the logit
+        # lens lab's plain lens needs before folding discards them (lens.py).
+        model = LensReadyTransformer.from_pretrained(
             spec.tl_name, device=SETTINGS.device, dtype=SETTINGS.dtype
         )
         self._resident[model_id] = _Entry(model=model, spec=spec)

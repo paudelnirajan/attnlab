@@ -6,6 +6,8 @@ around that with aliases would add more complexity than it removes."""
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -61,3 +63,42 @@ class TraceRequest(BaseModel):
 class CountRequest(BaseModel):
     tokenizers: list[str] = Field(min_length=1)
     texts: list[str] = Field(min_length=1)
+
+
+# --- Logit lens lab (api/lens_routes.py) ------------------------------------
+
+LensName = Literal["ln_final", "plain"]
+
+
+class LensRunRequest(BaseModel):
+    model: str
+    text: str
+    lens: LensName = "ln_final"
+    prepend_bos: bool = True
+
+
+class LensViewRequest(BaseModel):
+    """Re-read a stored run under a different lens, without a new forward pass."""
+
+    run_id: str
+    lens: LensName = "ln_final"
+
+
+class LensPositionRequest(BaseModel):
+    run_id: str
+    pos: int = Field(ge=0)
+    lens: LensName = "ln_final"
+    k: int = Field(default=10, ge=1, le=25)
+    track: list[str] = Field(default_factory=list, max_length=6)
+    track_ids: list[int] = Field(default_factory=list, max_length=6)
+
+
+class LensAttributionRequest(BaseModel):
+    run_id: str
+    pos: int = Field(ge=0)
+    # a token id, or a string whose first token is used; neither means "the
+    # actual next token", or the model's own top prediction at the last position
+    target: int | None = None
+    target_str: str | None = None
+    contrast: int | None = None
+    contrast_str: str | None = None

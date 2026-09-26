@@ -22,10 +22,15 @@ from typing import AsyncGenerator
 
 import numpy as np
 
+from attnlab.lens import LensRun
 from attnlab.toklab import TokenizerCache
 from attnlab.zoo import ModelZoo
 
 RUN_TTL_SECONDS = 600  # docs/02-api.md: "~10 min"
+# A lens run keeps the whole residual stream (every sub-layer, every position)
+# plus attention/MLP outputs and per-head z: ~50 MB for gpt2-small at 256
+# tokens, ~130 MB for gpt2-medium. Only the most recent few are worth keeping.
+MAX_LENS_RUNS = 4
 
 
 @dataclasses.dataclass
@@ -42,6 +47,15 @@ class RunRecord:
     expires_at: float
 
 
+@dataclasses.dataclass
+class LensRunRecord:
+    run_id: str
+    model_id: str
+    run: LensRun
+    created_at: float
+    expires_at: float
+
+
 class AppState:
     def __init__(self, *, registry_path: str | None = None, budget_mb: float | None = None):
         self.zoo = ModelZoo(registry_path=registry_path, budget_mb=budget_mb)
@@ -50,6 +64,7 @@ class AppState:
         self.tokenizers = TokenizerCache()
         self.semaphore = asyncio.Semaphore(1)
         self.runs: dict[str, RunRecord] = {}
+        self.lens_runs: dict[str, LensRunRecord] = {}  # insertion order = age
         self._waiting = 0  # requests currently queued behind the semaphore
 
     @property
@@ -111,3 +126,28 @@ class AppState:
     def get_run(self, run_id: str) -> RunRecord | None:
         self._sweep_expired()
         return self.runs.get(run_id)
+
+    # -- logit lens runs (api/lens_routes.py) ------------------------------
+
+    def store_lens_run(self, *, model_id: str, run: LensRun) -> LensRunRecord:
+        now = time.time()
+        for k in [k for k, v in self.lens_runs.items() if v.expires_at < now]:
+            del self.lens_runs[k]
+        while len(self.lens_runs) >= MAX_LENS_RUNS:
+            del self.lens_runs[next(iter(self.lens_runs))]
+        rec = LensRunRecord(
+            run_id="l_" + secrets.token_hex(4),
+            model_id=model_id,
+            run=run,
+            created_at=now,
+            expires_at=now + RUN_TTL_SECONDS,
+        )
+        self.lens_runs[rec.run_id] = rec
+        return rec
+
+    def get_lens_run(self, run_id: str) -> LensRunRecord | None:
+        rec = self.lens_runs.get(run_id)
+        if rec is None or rec.expires_at < time.time():
+            self.lens_runs.pop(run_id, None)
+            return None
+        return rec
