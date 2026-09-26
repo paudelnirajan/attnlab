@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { Home } from "./labs/home/Home";
+import { LensLab } from "./labs/lens/LensLab";
 import { currentLabId } from "./labs/registry";
 import { TokenLab } from "./labs/tokens/TokenLab";
 import "./styles.css";
@@ -18,6 +19,8 @@ function Root() {
       return <TokenLab />;
     case "attention":
       return <App />;
+    case "logit-lens":
+      return <LensLab />;
     default:
       return <Home />;
   }

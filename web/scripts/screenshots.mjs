@@ -11,7 +11,8 @@
 // cells that causal masking makes impossible.
 //
 // Requires both dev servers: uvicorn on :8000 and vite on :5173. Covers the
-// attention lab (01-11) and the tokenizer lab + home page (20-26).
+// attention lab (01-11), the tokenizer lab + home page (20-26) and the
+// logit lens lab (30-36).
 
 import { chromium } from "playwright";
 const OUT = process.argv[2] ?? ".screenshots";
@@ -27,7 +28,7 @@ page.on("requestfailed", (r) => problems.push(`[requestfailed] ${r.url()} ${r.fa
 
 const shot = async (name, opts = {}) => { await page.screenshot({ path: `${OUT}/${name}.png`, ...opts }); console.log("shot:", name); };
 
-await page.goto("http://127.0.0.1:5173/attention", { waitUntil: "networkidle" });
+await page.goto("http://localhost:5173/attention", { waitUntil: "networkidle" });
 await page.waitForSelector(".chip", { timeout: 20000 });
 await page.waitForFunction(() => document.querySelectorAll("canvas").length > 0, null, { timeout: 20000 });
 await page.waitForTimeout(600);
@@ -91,7 +92,7 @@ console.log("horizontal overflow at 390px:", overflow, "px (expect 0)");
 // checks the strip shows the text rather than a row of U+FFFD.
 await page.setViewportSize({ width: 1200, height: 900 });
 const devanagari = encodeURIComponent("म हिमालयी राष्ट्र नेपालको हुँ र मलाई यसमा धेरै गर्व छ।");
-await page.goto(`http://127.0.0.1:5173/?model=gpt2-small&prompt=${devanagari}&layer=0`, { waitUntil: "networkidle" });
+await page.goto(`http://localhost:5173/?model=gpt2-small&prompt=${devanagari}&layer=0`, { waitUntil: "networkidle" });
 await page.waitForSelector(".cluster--frag", { timeout: 120000 });
 await page.waitForTimeout(900);
 await page.locator(".card").filter({ hasText: "positions" }).first().screenshot({ path: `${OUT}/10-fragmentation.png` });
@@ -107,7 +108,7 @@ if (!clean) { problems.push("token strip rendered a replacement character"); }
 // and the bug is invisible — which is exactly how it shipped once.
 await page.setViewportSize({ width: 1380, height: 1000 });
 const longPrompt = encodeURIComponent(Array.from({ length: 60 }, (_, i) => `w${i}`).join(" "));
-await page.goto(`http://127.0.0.1:5173/?model=attn-only-2l-demo&prompt=${longPrompt}&layer=0&head=2`, {
+await page.goto(`http://localhost:5173/?model=attn-only-2l-demo&prompt=${longPrompt}&layer=0&head=2`, {
   waitUntil: "networkidle",
 });
 await page.waitForSelector(".heat__band", { timeout: 60000 });
@@ -130,11 +131,11 @@ if (geo.bandBottom !== null && (geo.bandBottom > geo.canvasBottom + 1 || geo.ban
 await shot("11-long-prompt", { fullPage: true });
 
 // --- Tokenizer lab (step 1) and the path overview -------------------------
-await page.goto("http://127.0.0.1:5173/", { waitUntil: "networkidle" });
+await page.goto("http://localhost:5173/", { waitUntil: "networkidle" });
 await shot("20-home", { fullPage: true });
 
 const nepali = encodeURIComponent("नेपाल एक सुन्दर देश हो।");
-await page.goto(`http://127.0.0.1:5173/tokens?tok=gpt2&text=${nepali}`, { waitUntil: "networkidle" });
+await page.goto(`http://localhost:5173/tokens?tok=gpt2&text=${nepali}`, { waitUntil: "networkidle" });
 await page.waitForSelector(".cluster--frag", { timeout: 60000 });
 await page.locator(".chip").nth(1).hover();
 await page.waitForTimeout(300);
@@ -163,6 +164,38 @@ if (tokOverflow > 0) problems.push(`tokenizer lab overflows horizontally by ${to
 await shot("26-toklab-phone", { fullPage: true });
 
 console.log("\nURL:", page.url());
+// --- logit lens lab (30-36) ------------------------------------------------
+await page.setViewportSize({ width: 1380, height: 1000 });
+await page.goto("http://localhost:5173/logit-lens", { waitUntil: "networkidle" });
+await page.waitForSelector(".lgrid__cell", { timeout: 60000 });
+await page.waitForTimeout(400);
+await shot("30-lens-grid", { fullPage: true });
+// the anchor checks are recomputed on every run; a failing one is a real bug
+const failedChecks = await page.evaluate(async () => {
+  const r = await fetch("/api/lens/run", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "gpt2-small", text: "The Eiffel Tower is located in the city of" }) });
+  return (await r.json()).checks.filter((c) => !c.ok).map((c) => c.id);
+});
+if (failedChecks.length) problems.push(`lens anchor checks failed: ${failedChecks.join(", ")}`);
+for (const [i, name] of [[1, "trajectory"], [2, "attribution"], [3, "layers"], [4, "hood"]]) {
+  await page.locator(".tabs__tab").nth(i).click();
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(400);
+  await shot(`3${i}-lens-${name}`, { fullPage: true });
+}
+const ioi = encodeURIComponent("When Mary and John went to the store, John gave a drink to");
+await page.goto(`http://localhost:5173/logit-lens?view=attribution&prompt=${ioi}&target={"str":" Mary"}&contrast={"str":" John"}`, { waitUntil: "networkidle" });
+await page.waitForSelector(".headmap__cell", { timeout: 60000 });
+const sums = await page.locator(".equation").textContent();
+if (!sums?.includes("sums to the model's logit")) problems.push("attribution does not sum to the model's logit");
+await shot("35-lens-ioi", { fullPage: true });
+await page.setViewportSize({ width: 390, height: 900 });
+await page.goto("http://localhost:5173/logit-lens", { waitUntil: "networkidle" });
+await page.waitForSelector(".lgrid__cell", { timeout: 60000 });
+const lensOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+if (lensOverflow > 0) problems.push(`logit lens overflows horizontally by ${lensOverflow}px at 390px`);
+await shot("36-lens-phone", { fullPage: true });
+
 console.log("\n=== console/network problems ===");
 if (problems.length) { failed = true; console.log([...new Set(problems)].join("\n")); } else console.log("(none)");
 await browser.close();

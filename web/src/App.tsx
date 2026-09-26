@@ -285,6 +285,11 @@ export default function App() {
               <CostPanel />
               <PredictionPanel />
             </div>
+            <p className="handoff">
+              <a href={labHref("logit-lens", { model, prompt })}>
+                When does the model know the answer? Decode every layer in the Logit lens →
+              </a>
+            </p>
           </div>
         )}
         <PathNav labId="attention" />

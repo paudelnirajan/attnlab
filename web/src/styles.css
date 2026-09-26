@@ -27,6 +27,15 @@
   --baseline: #c3c2b7;
   --border-hairline: rgba(11, 11, 11, 0.1);
   --series-blue: #2a78d6;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --div-pos: #2a78d6;
+  --div-neg: #e34948;
+  --div-mid: #f0efec;
   --status-good: #0ca30c;
   --status-warning: #fab219;
   --status-serious: #ec835a;
@@ -90,6 +99,24 @@
     --baseline: #383835;
     --border-hairline: rgba(255, 255, 255, 0.1);
     --series-blue: #3987e5;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --div-pos: #3987e5;
+  --div-neg: #e66767;
+  --div-mid: #383835;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --div-pos: #3987e5;
+    --div-neg: #e66767;
+    --div-mid: #383835;
     --status-good: #0ca30c;
     --status-warning: #fab219;
     --status-serious: #ec835a;
@@ -2015,4 +2042,505 @@ a {
   .labnav__link {
     padding: 0 6px;
   }
+}
+
+
+/* ============================================================ logit lens -- */
+
+.tok {
+  font-family: var(--font-mono);
+  white-space: pre;
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 0 3px;
+}
+
+.okmark {
+  font-size: var(--t-sm);
+  white-space: nowrap;
+}
+.okmark--ok {
+  color: var(--status-good);
+}
+.okmark--warn {
+  color: var(--status-critical);
+}
+
+/* the grid: rows are layers (output on top), columns are positions */
+.lgrid {
+  --lgrid-col: 76px;
+  --lgrid-label: 84px;
+  display: grid;
+  gap: 2px;
+  overflow-x: auto;
+  padding-bottom: var(--s2);
+  font-family: var(--font-mono);
+  font-size: var(--t-xs);
+}
+
+.lgrid__cell {
+  appearance: none;
+  border: 0;
+  border-radius: 4px;
+  min-height: 34px;
+  padding: 2px 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  text-align: left;
+}
+
+.lgrid__cell:hover {
+  box-shadow: inset 0 0 0 2px var(--text-secondary);
+}
+.lgrid__cell.is-selected {
+  box-shadow: inset 0 0 0 2px var(--crosshair);
+}
+.lgrid__cell--output {
+  margin-bottom: 6px;
+}
+
+.lgrid__tok {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+  font-size: var(--t-sm);
+}
+.lgrid__val {
+  opacity: 0.85;
+  white-space: nowrap;
+}
+.lgrid__hit {
+  font-weight: 700;
+}
+
+.lgrid__rowlabel {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface-1);
+  display: flex;
+  align-items: center;
+  padding-right: var(--s2);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.lgrid__rowlabel--output {
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.lgrid__rowlabel--block {
+  color: var(--text-primary);
+}
+
+.lgrid__corner {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface-1);
+}
+.lgrid__axis {
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  display: flex;
+  align-items: center;
+}
+
+.lgrid__head,
+.lgrid__foot {
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-secondary);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+.lgrid__head.is-on,
+.lgrid__foot.is-on {
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
+.lgrid__tipwrap {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+}
+.lgrid__tip {
+  position: static;
+  min-width: 220px;
+}
+.lgrid__tiplist {
+  margin: var(--s2) 0;
+  padding-left: 1.4em;
+}
+.lgrid__tiplist li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+.lgrid__tipfacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--s3);
+  color: var(--text-secondary);
+  font-size: var(--t-xs);
+}
+.lgrid__note {
+  font-size: var(--t-xs);
+  margin-bottom: 0;
+}
+
+/* line charts */
+.linechart {
+  position: relative;
+  width: 100%;
+}
+.linechart svg {
+  display: block;
+  overflow: visible;
+}
+.linechart__grid {
+  stroke: var(--gridline);
+  stroke-width: 1;
+}
+.linechart__zero {
+  stroke: var(--baseline);
+  stroke-width: 1;
+}
+.linechart__tick,
+.linechart__ytitle {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.linechart__tick--on {
+  fill: var(--text-primary);
+  font-weight: 700;
+}
+.linechart__end {
+  fill: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+.linechart__cross,
+.linechart__pick {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+}
+.linechart__pick {
+  stroke: var(--crosshair);
+}
+.linechart__ring {
+  stroke: var(--surface-1);
+  stroke-width: 2;
+}
+.linechart__dot {
+  stroke: var(--surface-1);
+  stroke-width: 1;
+}
+.linechart__tooltip {
+  min-width: 170px;
+}
+.linechart__tiprow {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.linechart__tiplabel {
+  flex: 1;
+  font-family: var(--font-mono);
+  white-space: pre;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s4);
+  font-size: var(--t-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--s2);
+}
+.legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  white-space: pre;
+}
+.legend__swatch {
+  display: inline-block;
+  width: 14px;
+  border-top: 3px solid;
+  border-radius: 2px;
+  flex: none;
+}
+.legend__swatch--dashed {
+  border-top-style: dashed;
+}
+
+/* position picker and tracked tokens */
+.pospick__caption {
+  font-size: var(--t-sm);
+  color: var(--text-secondary);
+  margin: var(--s2) 0 0;
+}
+.trackbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+.trackchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 2px 8px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--r-pill);
+  font-size: var(--t-sm);
+}
+.trackbar__add {
+  display: flex;
+  gap: var(--s1);
+}
+.trackbar__add .input {
+  width: 180px;
+}
+.select--sm {
+  height: 26px;
+  width: auto;
+  font-size: var(--t-sm);
+}
+
+.toptable {
+  border-collapse: collapse;
+  font-size: var(--t-sm);
+  width: 100%;
+}
+.toptable th,
+.toptable td {
+  padding: 3px var(--s2);
+  border-bottom: 1px solid var(--gridline);
+  white-space: nowrap;
+  text-align: left;
+}
+.toptable th {
+  color: var(--text-secondary);
+  font-weight: 500;
+  position: sticky;
+  left: 0;
+  background: var(--surface-1);
+}
+.toptable td .legend__swatch {
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.toptable__output th {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* attribution */
+.equation {
+  font-size: var(--t-lg);
+  margin-top: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s2);
+}
+
+.dla {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dla__layer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 2px;
+  border-top: 1px solid var(--gridline);
+}
+.dla__row {
+  appearance: none;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  display: grid;
+  grid-template-columns: 72px 1fr 64px;
+  align-items: center;
+  gap: var(--s2);
+  padding: 1px 0;
+  font-size: var(--t-xs);
+  cursor: pointer;
+  text-align: left;
+}
+.dla__row:disabled {
+  cursor: default;
+}
+.dla__row:not(:disabled):hover .dla__label {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+.dla__label {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+.dla__track {
+  position: relative;
+  height: 12px;
+}
+.dla__axis {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  border-left: 1px solid var(--baseline);
+}
+.dla__bar {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  min-width: 1px;
+}
+.dla__bar--pos {
+  background: var(--div-pos);
+  border-radius: 0 4px 4px 0;
+}
+.dla__bar--neg {
+  background: var(--div-neg);
+  border-radius: 4px 0 0 4px;
+}
+.dla__row--mlp .dla__bar {
+  opacity: 0.6;
+}
+.dla__value {
+  font-family: var(--font-mono);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.headmap {
+  --headmap-label: 36px;
+  display: grid;
+  gap: 2px;
+  font-size: var(--t-xs);
+  font-family: var(--font-mono);
+}
+.headmap__col,
+.headmap__row {
+  color: var(--text-muted);
+  text-align: center;
+}
+.headmap__row {
+  text-align: left;
+  align-self: center;
+}
+.headmap__cell {
+  appearance: none;
+  border: 0;
+  border-radius: 3px;
+  min-height: 22px;
+  font: inherit;
+  font-size: 10px;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0;
+}
+.headmap__cell:hover {
+  box-shadow: inset 0 0 0 1px var(--text-secondary);
+}
+.headmap__cell.is-selected {
+  box-shadow: inset 0 0 0 2px var(--crosshair);
+}
+.divlegend {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s2);
+  font-size: var(--t-xs);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.divlegend__ramp {
+  flex: 1;
+  max-width: 200px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(to right, var(--div-neg), var(--div-mid), var(--div-pos));
+}
+.ranked__row.is-selected {
+  box-shadow: inset 0 0 0 2px var(--crosshair);
+}
+
+.toklist {
+  margin: 0;
+  padding-left: 1.4em;
+  font-size: var(--t-sm);
+}
+.toklist li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: 1px 0;
+}
+
+/* under the hood */
+.codeblock {
+  font-family: var(--font-mono);
+  font-size: var(--t-sm);
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: var(--s3);
+  overflow-x: auto;
+  line-height: 1.55;
+  margin: 0;
+}
+.checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.checks__item {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: var(--s2);
+  font-size: var(--t-sm);
+}
+
+.factlist {
+  display: grid;
+  grid-template-columns: minmax(110px, max-content) minmax(0, 1fr);
+  gap: var(--s2) var(--s4);
+  margin: 0;
+  font-size: var(--t-sm);
+}
+.factlist dt {
+  color: var(--text-secondary);
+}
+.factlist dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.segmented--wrap {
+  flex-wrap: wrap;
+  max-width: 100%;
+  height: auto;
 }

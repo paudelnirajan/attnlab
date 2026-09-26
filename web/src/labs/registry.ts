@@ -67,9 +67,14 @@ export const LABS: LabInfo[] = [
     step: 4,
     title: "Logit lens",
     question: "When does the model know the answer?",
-    summary: "Decode the residual stream after every layer and watch the prediction form.",
-    learn: ["The residual stream as a running prediction", "Normalization choices and their effect", "Rank heatmaps"],
-    status: "planned",
+    summary:
+      "The residual stream is a running sum, and the model only turns the last one into a prediction. Decode it after every layer instead, and watch the answer form. Then split the final logit into what each layer and head wrote.",
+    learn: [
+      "The residual stream as a running prediction, layer by layer",
+      "Why normalization decides what a lens can see (ln_final vs plain)",
+      "Rank, KL and logit-difference curves, and direct logit attribution per head",
+    ],
+    status: "live",
   },
   {
     id: "ablation",
@@ -78,7 +83,7 @@ export const LABS: LabInfo[] = [
     title: "Ablation & attribution",
     question: "Which components actually matter?",
     summary: "Zero or mean-ablate heads and measure the change in loss and logits.",
-    learn: ["Zero vs mean ablation", "Direct logit attribution", "Why correlation in patterns isn't causation"],
+    learn: ["Zero vs mean ablation", "Activation patching", "Why direct attribution isn't causation"],
     status: "planned",
   },
 ];
