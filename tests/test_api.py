@@ -170,3 +170,26 @@ class TestPatterns:
         r = client.get("/api/run/r_doesnotexist/patterns", params={"layers": "0"})
         assert r.status_code == 404
         assert r.json()["error"]["code"] == "run_not_found"
+
+
+class TestServingSurface:
+    def test_health_reports_release_and_memory(self, client):
+        body = client.get("/api/health").json()
+        assert body["ready"] is True
+        assert body["version"] and body["revision"]
+        assert {"footprint_mb", "runs_mb", "lens_runs_mb"} <= body["memory"].keys()
+
+    def test_version(self, client):
+        body = client.get("/api/version").json()
+        assert set(body) == {"version", "revision"}
+
+    def test_text_over_the_character_cap_is_refused_before_tokenizing(self, client):
+        from attnlab.settings import SETTINGS
+
+        r = client.post("/api/run", json={"model": MODEL, "text": "a" * (SETTINGS.max_text_chars + 1)})
+        assert r.status_code == 422
+        assert r.json()["error"]["code"] == "text_too_long"
+
+    def test_stored_runs_are_counted(self, client):
+        client.post("/api/run", json={"model": MODEL, "text": "hello there"})
+        assert client.get("/api/health").json()["memory"]["runs"] >= 1

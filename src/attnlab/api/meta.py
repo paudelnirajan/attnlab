@@ -5,12 +5,37 @@ same Stage 0a instrumentation record (attnlab.instrument.Measurement)."""
 from __future__ import annotations
 
 import importlib.metadata
+import os
+import subprocess
+from pathlib import Path
 from typing import Any
 
 from attnlab.instrument import Measurement
 from attnlab.settings import SETTINGS
 
 TL_VERSION = importlib.metadata.version("transformer-lens")
+VERSION = importlib.metadata.version("attnlab")  # pyproject.toml, bumped per release
+
+
+def _revision() -> str:
+    """The deployed commit. deploy/deploy.sh writes it to REVISION in the
+    release directory; a dev checkout asks git."""
+    if os.environ.get("MI_REVISION"):
+        return os.environ["MI_REVISION"]
+    root = Path(__file__).resolve().parents[3]
+    f = root / "REVISION"
+    if f.is_file():
+        return f.read_text().strip()
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=root, capture_output=True, text=True, timeout=2
+        )
+        return out.stdout.strip() or "unknown"
+    except (OSError, subprocess.SubprocessError):
+        return "unknown"
+
+
+REVISION = _revision()
 
 _DEBUG_FIELDS = (
     "rss_delta_mb",

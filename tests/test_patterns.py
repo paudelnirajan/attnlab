@@ -161,3 +161,22 @@ class TestSizeMath:
         expected = 16 + 2 + 12 * (256 * 257 // 2)  # header + 1 layer id + triangle values
         assert len(encoded) == expected
         assert len(encoded) < 1_000_000, "per-layer payload must stay sub-megabyte through seq=256"
+
+
+def test_torch_encoder_matches_reference_bytes():
+    """The forward pass encodes in torch (inference.encode_pattern); the
+    wire format is defined by patterns.encode_layer. They must agree byte for
+    byte, including at rounding boundaries and the clip edges."""
+    import torch
+
+    from attnlab.inference import encode_pattern
+    from attnlab.patterns import encode_layer
+
+    rng = np.random.default_rng(0)
+    for seq in (1, 7, 64):
+        a = rng.random((3, seq, seq), dtype=np.float32)
+        a /= a.sum(-1, keepdims=True)
+        a[0, 0, 0] = 0.0
+        a[1, -1, -1] = 1.0
+        a[2, :, 0] = ((np.arange(seq) + 0.5) / 255.0) ** 2  # exact .5 rounding points
+        assert encode_pattern(torch.from_numpy(a)) == encode_layer(a)

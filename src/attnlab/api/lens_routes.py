@@ -19,7 +19,7 @@ from fastapi import APIRouter, Request
 
 from attnlab.api.errors import InvalidRequestError, RunNotFoundError, SeqTooLongError
 from attnlab.api.meta import build_meta
-from attnlab.api.routes import _serialized, _state
+from attnlab.api.routes import _serialized, _state, check_text
 from attnlab.api.schemas import (
     LensAttributionRequest,
     LensPositionRequest,
@@ -86,8 +86,9 @@ def _do_run(state: AppState, body: LensRunRequest):
 @router.post("/lens/run")
 async def lens_run(request: Request, body: LensRunRequest) -> dict:
     state = _state(request)
+    check_text(body.text)
     with measure("lens_run", model=body.model) as m:
-        model, records, run, summary, anat = await _serialized(state, _do_run, state, body)
+        model, records, run, summary, anat = await _serialized(request, _do_run, state, body)
         rec = state.store_lens_run(model_id=body.model, run=run)
     return {
         "run_id": rec.run_id,
@@ -115,7 +116,7 @@ async def lens_view(request: Request, body: LensViewRequest) -> dict:
         return summarize(model, rec.run, body.lens, model.tokenizer)
 
     with measure("lens_view", model=rec.model_id) as m:
-        summary = await _serialized(state, work)
+        summary = await _serialized(request, work)
     return {"run_id": rec.run_id, "lens": body.lens, **summary, "_meta": build_meta(m)}
 
 
@@ -129,7 +130,7 @@ async def lens_layers(request: Request, body: LensViewRequest) -> dict:
         return layer_curves(model, rec.run, model.tokenizer)
 
     with measure("lens_layers", model=rec.model_id) as m:
-        curves = await _serialized(state, work)
+        curves = await _serialized(request, work)
     return {"run_id": rec.run_id, **curves, "_meta": build_meta(m)}
 
 
@@ -159,7 +160,7 @@ async def lens_position(request: Request, body: LensPositionRequest) -> dict:
         return detail, resolved
 
     with measure("lens_position", model=rec.model_id) as m:
-        detail, resolved = await _serialized(state, work)
+        detail, resolved = await _serialized(request, work)
     return {"run_id": rec.run_id, **detail, "resolved": resolved, "_meta": build_meta(m)}
 
 
@@ -198,5 +199,5 @@ async def lens_attribution(request: Request, body: LensAttributionRequest) -> di
         return out
 
     with measure("lens_attribution", model=rec.model_id) as m:
-        out = await _serialized(state, work)
+        out = await _serialized(request, work)
     return {"run_id": rec.run_id, **out, "_meta": build_meta(m)}

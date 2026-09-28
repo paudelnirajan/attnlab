@@ -36,6 +36,14 @@ class ModelSpec:
     d_model: int
     n_params: int
     reason: str | None = None  # populated when tier == "disabled"
+    # Extra memory held only WHILE loading: the raw checkpoint and the
+    # processed copy exist side by side until processing finishes (D17). The
+    # zoo reserves est_ram_mb + load_extra_mb for a load, est_ram_mb after.
+    load_extra_mb: float = 0.0
+
+    @property
+    def load_peak_mb(self) -> float:
+        return self.est_ram_mb + self.load_extra_mb
 
     def __post_init__(self) -> None:
         if self.tier not in VALID_TIERS:

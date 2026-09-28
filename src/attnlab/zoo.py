@@ -2,7 +2,8 @@
 LRU model cache with an ENFORCED byte budget (docs/PLAN.md Stage 0b,
 docs/03-decisions.md D6 + D8).
 
-Budgets against `est_ram_mb` from models.yaml — a value MEASURED in
+Budgets against `est_ram_mb` (resident) and `load_extra_mb` (the extra held
+only while loading) from models.yaml — a value MEASURED in
 Stage 0a (see the comment at the top of models.yaml), not a live RSS
 delta. D8 established why the latter is unreliable: RSS deltas across
 sequential in-process loads are allocator-history-dependent, both
@@ -24,16 +25,18 @@ here safe to use without its own locking.
 
 from __future__ import annotations
 
-import gc
 import time
 from collections import OrderedDict
 from dataclasses import dataclass, field
 
 from transformer_lens import HookedTransformer
 
+from attnlab import hub, memory
 from attnlab.lens import LensReadyTransformer
 from attnlab.registry import ModelSpec, load_registry
 from attnlab.settings import SETTINGS
+
+hub.install_cached_listing()  # loads must work with HF_HUB_OFFLINE=1 (hub.py)
 
 
 class UnknownModelError(Exception):
@@ -89,9 +92,25 @@ class ModelZoo:
     def list_specs(self) -> list[ModelSpec]:
         return list(self._specs.values())
 
-    def status(self, model_id: str) -> str:
+    def fits(self, spec: ModelSpec) -> bool:
+        """Whether this model can be loaded at all under this budget, with
+        nothing else resident. One that can't is shown as disabled, so the
+        same registry works on a 16 GB server and a bigger one."""
+        return spec.load_peak_mb <= self.budget_mb
+
+    def disabled_reason(self, model_id: str) -> str | None:
         spec = self.spec(model_id)
         if spec.tier == "disabled":
+            return spec.reason
+        if not self.fits(spec):
+            return (
+                f"needs {spec.load_peak_mb / 1024:.1f} GB while loading; "
+                f"this server's model budget is {self.budget_mb / 1024:.1f} GB"
+            )
+        return None
+
+    def status(self, model_id: str) -> str:
+        if self.disabled_reason(model_id) is not None:
             return "disabled"
         return "resident" if model_id in self._resident else "available"
 
@@ -115,19 +134,20 @@ class ModelZoo:
             self._resident[model_id] = entry
             return entry.model
 
-        if spec.est_ram_mb > self.budget_mb:
-            raise BudgetExceededError(model_id, spec.est_ram_mb, self.budget_mb)
+        if not self.fits(spec):
+            raise BudgetExceededError(model_id, spec.load_peak_mb, self.budget_mb)
 
-        while self._resident and self.used_mb + spec.est_ram_mb > self.budget_mb:
+        # Room for the load's peak, not just what stays resident afterwards.
+        while self._resident and self.used_mb + spec.load_peak_mb > self.budget_mb:
             lru_id, _ = next(iter(self._resident.items()))
             self.evict(lru_id)
 
-        if self.used_mb + spec.est_ram_mb > self.budget_mb:
+        if self.used_mb + spec.load_peak_mb > self.budget_mb:
             # Defensive: unreachable given the single-model check above
             # (an empty cache plus a model already confirmed to fit alone
             # cannot fail this), but a loud error here is far preferable
             # to a silent OOM if that invariant is ever broken.
-            raise BudgetExceededError(model_id, spec.est_ram_mb, self.budget_mb)
+            raise BudgetExceededError(model_id, spec.load_peak_mb, self.budget_mb)
 
         # Identical to HookedTransformer.from_pretrained (same processing, same
         # weights), but it also records the raw ln_final weights the logit
@@ -135,6 +155,7 @@ class ModelZoo:
         model = LensReadyTransformer.from_pretrained(
             spec.tl_name, device=SETTINGS.device, dtype=SETTINGS.dtype
         )
+        memory.release()  # the raw checkpoint copy is garbage now
         self._resident[model_id] = _Entry(model=model, spec=spec)
         return model
 
@@ -142,7 +163,16 @@ class ModelZoo:
         entry = self._resident.pop(model_id, None)
         if entry is not None:
             del entry.model
-            gc.collect()
+            memory.release()
+
+    def evict_lru(self, keep: str | None = None) -> str | None:
+        """Evict the least recently used model other than `keep`. Returns its
+        id, or None when there was nothing to evict."""
+        for model_id in self._resident:
+            if model_id != keep:
+                self.evict(model_id)
+                return model_id
+        return None
 
     def evict_all(self) -> None:
         for model_id in list(self._resident.keys()):
@@ -153,4 +183,7 @@ if __name__ == "__main__":
     zoo = ModelZoo()
     print(f"budget: {zoo.budget_mb:.0f}MB")
     for spec in zoo.list_specs():
-        print(f"  {spec.id:20s} tier={spec.tier:8s} status={zoo.status(spec.id):10s} est_ram_mb={spec.est_ram_mb:.0f}")
+        print(
+            f"  {spec.id:20s} tier={spec.tier:8s} status={zoo.status(spec.id):10s} "
+            f"est_ram_mb={spec.est_ram_mb:.0f} load_peak_mb={spec.load_peak_mb:.0f}"
+        )

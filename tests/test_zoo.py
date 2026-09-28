@@ -172,3 +172,29 @@ class TestRealIntegration:
         assert model.cfg.n_layers == 2
         assert zoo.status("attn-only-2l-demo") == "resident"
         zoo.evict_all()  # clean up so this process doesn't hold it resident
+
+
+class TestLoadPeak:
+    """D17: a load briefly holds the raw checkpoint beside the processed
+    model, so admission reserves est_ram_mb + load_extra_mb."""
+
+    def _entry(self, id_: str, ram: float, extra: float) -> str:
+        return _entry(id_, ram) + f"\n  load_extra_mb: {extra}"
+
+    def test_eviction_makes_room_for_the_load_peak(self, tmp_path, mock_load):
+        p = _write_registry(tmp_path, self._entry("a", 300, 0), self._entry("b", 300, 500))
+        zoo = ModelZoo(registry_path=p, budget_mb=1000)
+        zoo.get_or_load("a")
+        # 300 resident + 300 + 500 peak = 1100 > 1000: "a" has to go first,
+        # even though 300 + 300 would fit once loaded.
+        zoo.get_or_load("b")
+        assert zoo.resident_ids() == ["b"]
+
+    def test_a_model_whose_peak_cannot_fit_is_shown_disabled(self, tmp_path, mock_load):
+        p = _write_registry(tmp_path, self._entry("big", 600, 600))
+        zoo = ModelZoo(registry_path=p, budget_mb=1000)
+        assert zoo.status("big") == "disabled"
+        assert "while loading" in zoo.disabled_reason("big")
+        with pytest.raises(BudgetExceededError):
+            zoo.get_or_load("big")
+        assert mock_load == []

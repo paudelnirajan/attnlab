@@ -17,9 +17,10 @@ class ApiError(Exception):
     code: str = "internal_error"
     status_code: int = 500
 
-    def __init__(self, message: str, detail: dict | None = None):
+    def __init__(self, message: str, detail: dict | None = None, *, retry_after: int | None = None):
         self.message = message
         self.detail = detail or {}
+        self.retry_after = retry_after  # seconds; sent as the Retry-After header
         super().__init__(message)
 
 
@@ -46,3 +47,29 @@ class BusyError(ApiError):
 class TextTooLongError(ApiError):
     code = "text_too_long"
     status_code = 422
+
+
+class OverloadedError(ApiError):
+    """The memory guard (api/state.py) couldn't get under MI_MEMORY_LIMIT_GB."""
+
+    code = "overloaded"
+    status_code = 503
+
+
+class RateLimitedError(ApiError):
+    code = "rate_limited"
+    status_code = 429
+
+
+class ClientGoneError(ApiError):
+    """The client disconnected while its request was queued. Nobody reads
+    the response; 499 is nginx's convention for it, which keeps these
+    visible in the access log without looking like server errors."""
+
+    code = "client_gone"
+    status_code = 499
+
+
+class PayloadTooLargeError(ApiError):
+    code = "payload_too_large"
+    status_code = 413

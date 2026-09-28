@@ -18,10 +18,11 @@ the event loop stays free.
 from __future__ import annotations
 
 import asyncio
+from typing import Any, Callable
 
 from fastapi import APIRouter, Query, Request
 
-from attnlab.api.errors import InvalidRequestError, TextTooLongError
+from attnlab.api.errors import BusyError, InvalidRequestError, TextTooLongError
 from attnlab.api.schemas import AnalyzeRequest, CountRequest, TraceRequest
 from attnlab.toklab import (
     MAX_COUNT_TEXTS,
@@ -43,6 +44,22 @@ MAX_ANALYZE_TOKENIZERS = 6
 
 def _cache(request: Request) -> TokenizerCache:
     return request.app.state.attnlab.tokenizers
+
+
+async def _tok_work(request: Request, fn: Callable[[], Any]) -> Any:
+    """Tokenizer work runs in a thread, outside the model slot, so tokenizing
+    never queues behind a forward pass. It is bounded on its own instead:
+    MI_TOKENIZER_CONCURRENCY at once, and a caller that can't get a slot within
+    10 s is told the server is busy."""
+    slots = request.app.state.attnlab.tokenizer_slots
+    try:
+        await asyncio.wait_for(slots.acquire(), timeout=10)
+    except asyncio.TimeoutError:
+        raise BusyError("the tokenizer lab is busy; try again in a few seconds", retry_after=5) from None
+    try:
+        return await asyncio.to_thread(fn)
+    finally:
+        slots.release()
 
 
 def _check_text(text: str) -> None:
@@ -87,7 +104,7 @@ async def analyze_route(request: Request, body: AnalyzeRequest) -> dict:
     def work() -> list[dict]:
         return [analyze(cache.get(tid), body.text, add_special_tokens=body.add_special_tokens) for tid in ids]
 
-    return {"results": await asyncio.to_thread(work)}
+    return {"results": await _tok_work(request, work)}
 
 
 @router.post("/toklab/trace")
@@ -96,7 +113,7 @@ async def trace_route(request: Request, body: TraceRequest) -> dict:
         raise TextTooLongError("trace accepts up to 2000 characters", {"max_chars": 2_000, "got": len(body.text)})
     cache = _cache(request)
     cache.spec(body.tokenizer)
-    return await asyncio.to_thread(lambda: trace(cache.get(body.tokenizer), body.text))
+    return await _tok_work(request, lambda: trace(cache.get(body.tokenizer), body.text))
 
 
 @router.post("/toklab/count")
@@ -112,14 +129,14 @@ async def count_route(request: Request, body: CountRequest) -> dict:
     ids = list(dict.fromkeys(body.tokenizers))
     for tid in ids:
         cache.spec(tid)
-    return await asyncio.to_thread(lambda: count([cache.get(t) for t in ids], body.texts))
+    return await _tok_work(request, lambda: count([cache.get(t) for t in ids], body.texts))
 
 
 @router.get("/toklab/vocab")
 async def vocab_route(request: Request, tokenizer: str = Query(...)) -> dict:
     cache = _cache(request)
     cache.spec(tokenizer)
-    return await asyncio.to_thread(lambda: vocab_summary(cache.get(tokenizer)))
+    return await _tok_work(request, lambda: vocab_summary(cache.get(tokenizer)))
 
 
 @router.get("/toklab/vocab/search")
@@ -134,4 +151,4 @@ async def vocab_search_route(
         raise InvalidRequestError(f"unknown script {script!r}", {"scripts": [*SCRIPTS, "other", "partial"]})
     cache = _cache(request)
     cache.spec(tokenizer)
-    return await asyncio.to_thread(lambda: vocab_search(cache.get(tokenizer), q, script=script, limit=limit))
+    return await _tok_work(request, lambda: vocab_search(cache.get(tokenizer), q, script=script, limit=limit))

@@ -73,6 +73,44 @@ class EncodedLayer:
     payload: bytes  # concatenated per-head packed+quantized values
 
 
+def encode_layer(arr: np.ndarray, *, flags: int = DEFAULT_FLAGS) -> bytes:
+    """One layer's body: every head of a (n_heads, seq, seq) array, quantized
+    and packed, concatenated. No header. The API stores runs in this form
+    (about 8x smaller than float32) and frames the layers a request asks for
+    with `frame_layers`."""
+    n_heads, seq, seq2 = arr.shape
+    if seq != seq2:
+        raise ValueError(f"expected square attention, got {arr.shape}")
+    packed = bool(flags & FLAG_TRIANGLE)
+    is_u8 = bool(flags & FLAG_UINT8)
+    sqrt_comp = bool(flags & FLAG_SQRT_COMPANDED)
+    chunks = []
+    for h in range(n_heads):
+        head = arr[h]
+        if sqrt_comp:
+            head = compand_encode(head) if is_u8 else _compand_encode_u16(head)
+        elif is_u8:
+            head = np.round(np.clip(head, 0, 1) * 255).astype(np.uint8)
+        else:
+            head = np.round(np.clip(head, 0, 1) * 65535).astype(np.uint16)
+        if packed:
+            head = triangle_pack(head)
+        chunks.append(head.tobytes())
+    return b"".join(chunks)
+
+
+def frame_layers(
+    bodies: dict[int, bytes], *, n_heads: int, seq: int, flags: int = DEFAULT_FLAGS
+) -> bytes:
+    """Header + layer ids + the given `encode_layer` bodies, in layer order."""
+    if not bodies:
+        raise ValueError("frame_layers: no layers given")
+    layer_ids = sorted(bodies)
+    header = struct.pack(_HEADER_FMT, MAGIC, VERSION, flags, 0, len(layer_ids), n_heads, seq)
+    layer_id_bytes = b"".join(struct.pack("<H", lid) for lid in layer_ids)
+    return b"".join([header, layer_id_bytes, *(bodies[lid] for lid in layer_ids)])
+
+
 def encode_layers(
     pattern_by_layer: dict[int, np.ndarray],
     *,
@@ -96,34 +134,13 @@ def encode_layers(
     n_heads, seq, seq2 = first.shape
     if seq != seq2:
         raise ValueError(f"expected square attention, got {first.shape}")
-
-    packed = bool(flags & FLAG_TRIANGLE)
-    is_u8 = bool(flags & FLAG_UINT8)
-    sqrt_comp = bool(flags & FLAG_SQRT_COMPANDED)
-
-    header = struct.pack(
-        _HEADER_FMT, MAGIC, VERSION, flags, 0, len(layer_ids), n_heads, seq
-    )
-    layer_id_bytes = b"".join(struct.pack("<H", lid) for lid in layer_ids)
-
-    chunks = [header, layer_id_bytes]
     for lid in layer_ids:
         arr = pattern_by_layer[lid]
         if arr.shape != (n_heads, seq, seq):
             raise ValueError(f"layer {lid}: shape {arr.shape} != {(n_heads, seq, seq)}")
-        for h in range(n_heads):
-            head = arr[h]
-            if sqrt_comp:
-                head = compand_encode(head) if is_u8 else _compand_encode_u16(head)
-            elif is_u8:
-                head = np.round(np.clip(head, 0, 1) * 255).astype(np.uint8)
-            else:
-                head = np.round(np.clip(head, 0, 1) * 65535).astype(np.uint16)
-            if packed:
-                head = triangle_pack(head)
-            chunks.append(head.tobytes())
 
-    return b"".join(chunks)
+    bodies = {lid: encode_layer(pattern_by_layer[lid], flags=flags) for lid in layer_ids}
+    return frame_layers(bodies, n_heads=n_heads, seq=seq, flags=flags)
 
 
 def _compand_encode_u16(p: np.ndarray) -> np.ndarray:

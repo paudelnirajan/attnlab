@@ -14,6 +14,7 @@ import numpy as np
 import torch
 from transformer_lens import HookedTransformer
 
+
 _VISIBLE_WS = {" ": "·", "\n": "⏎", "\t": "→"}
 
 # Continuation marker for a token that is only part of a character. Shown
@@ -241,32 +242,61 @@ def token_records_from_ids(model: HookedTransformer, ids: list[int]) -> list[Tok
     return records
 
 
+@functools.lru_cache(maxsize=8)
+def _tril(seq: int) -> tuple[torch.Tensor, torch.Tensor]:
+    rows, cols = torch.tril_indices(seq, seq)
+    return rows, cols
+
+
+def encode_pattern(pattern: torch.Tensor) -> bytes:
+    """`patterns.encode_layer` with the default flags, done in torch on a
+    (n_heads, seq, seq) tensor: same bytes (tests/test_patterns.py checks), but
+    vectorised across heads and threads, so it adds little to the forward pass."""
+    p = pattern.detach().to(torch.float32).cpu()
+    u = (p.clamp(0.0, 1.0).sqrt() * 255.0).round().to(torch.uint8)
+    rows, cols = _tril(u.shape[-1])
+    return u[:, rows, cols].contiguous().numpy().tobytes()
+
+
 @dataclasses.dataclass
 class ForwardResult:
-    patterns: np.ndarray  # (n_layers, n_heads, seq, seq) float32, in [0,1]
+    # One `patterns.encode_layer` body per layer: quantized and packed, ~8x
+    # smaller than the float32 (n_heads, seq, seq) array it came from.
+    layers: list[bytes]
     loss_per_token: list[float]  # length seq-1 (no target for the last position)
     top_logits: list[list[dict]]  # length seq, each a list of top_k {id,str,logit,prob}
+
+    @property
+    def nbytes(self) -> int:
+        return sum(len(b) for b in self.layers)
 
 
 def run_forward(model: HookedTransformer, tokens: torch.Tensor, *, top_k: int = 5) -> ForwardResult:
     """One forward pass, extracting exactly what /run needs: attention
-    patterns (via names_filter, NOT the full cache — this is the
-    memory-saving path Stage 0a measured at 67-95%), per-token loss, and
-    top-k next-token predictions at every position."""
-    pattern_filter = lambda name: name.endswith("hook_pattern")  # noqa: E731
+    patterns, per-token loss, and top-k next-token predictions at every
+    position.
+
+    Each layer's pattern is encoded to the wire format inside a hook, while
+    the layer is running, and the float32 tensor is dropped. Caching them
+    all first (`run_with_cache`) would hold n_layers x n_heads x seq^2
+    float32 at once, then stack a second copy: ~0.9 GB for Qwen3-0.6B at 512
+    tokens, against ~60 MB encoded."""
+    n_layers = model.cfg.n_layers
+    layers: list[bytes | None] = [None] * n_layers
+
+    def keep(pattern: torch.Tensor, hook) -> None:
+        layers[hook.layer()] = encode_pattern(pattern[0])
+
     with torch.no_grad():
-        output, cache = model.run_with_cache(
-            tokens, names_filter=pattern_filter, return_type="both", loss_per_token=True
+        output = model.run_with_hooks(
+            tokens,
+            return_type="both",
+            loss_per_token=True,
+            fwd_hooks=[(lambda name: name.endswith("hook_pattern"), keep)],
         )
     logits, loss = output
+    assert all(b is not None for b in layers), "a layer's hook_pattern did not fire"
 
-    n_layers = model.cfg.n_layers
-    patterns = (
-        torch.stack([cache[f"blocks.{i}.attn.hook_pattern"][0] for i in range(n_layers)])
-        .to(torch.float32)
-        .cpu()
-        .numpy()
-    )
     loss_per_token = loss[0].to(torch.float32).cpu().tolist()
 
     seq = tokens.shape[1]
@@ -288,7 +318,7 @@ def run_forward(model: HookedTransformer, tokens: torch.Tensor, *, top_k: int = 
             )
         top_logits.append(row)
 
-    return ForwardResult(patterns=patterns, loss_per_token=loss_per_token, top_logits=top_logits)
+    return ForwardResult(layers=layers, loss_per_token=loss_per_token, top_logits=top_logits)
 
 
 def make_repeated_tokens(
