@@ -6,6 +6,8 @@ Versioning: docs/06-releasing.md.
 
 ## Unreleased
 
+## 0.2.0 — 2026-09-27
+
 ### Added
 - **Self-hosting on a 16 GB Mac.** One process serves the API and the built frontend
   behind a Cloudflare Tunnel. Deploy, rollback, status and watchdog scripts, launchd
