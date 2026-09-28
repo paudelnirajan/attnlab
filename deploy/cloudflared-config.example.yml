@@ -1,0 +1,20 @@
+# ~/.cloudflared/config.yml on the server (docs/05-server-setup.md § 5).
+# Replace TUNNEL_ID (from `cloudflared tunnel create attnlab`) and the domain.
+tunnel: TUNNEL_ID
+credentials-file: /Users/attnlab/.cloudflared/TUNNEL_ID.json
+
+# Keep a few connections warm to Cloudflare; restart quickly on network loss.
+protocol: quic
+retries: 10
+
+originRequest:
+  connectTimeout: 10s
+  # The API answers within MI_REQUEST_TIMEOUT_S (30 s) or says it's busy.
+  keepAliveTimeout: 60s
+
+ingress:
+  - hostname: example.com
+    service: http://127.0.0.1:8000
+  - hostname: www.example.com
+    service: http://127.0.0.1:8000
+  - service: http_status:404

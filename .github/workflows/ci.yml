@@ -1,0 +1,48 @@
+# Runs on every push and pull request: the same checks scripts/release.sh
+# runs locally, on a clean machine. A tag you deploy should have a green run.
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: macos-14  # Apple Silicon, like the server
+    env:
+      MallocLargeCache: "0"
+      MI_THREADS: "3"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Hugging Face cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ hashFiles('src/attnlab/models.yaml', 'src/attnlab/tokenizers.yaml') }}
+      - run: uv sync --frozen
+      - name: Model files (only what fits the server's budget)
+        run: MI_RAM_BUDGET_GB=7 FETCH_MIN_FREE_GB=5 uv run python scripts/fetch_models.py
+      - name: Tests (offline, as on the server)
+        run: HF_HUB_OFFLINE=1 uv run pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build

@@ -1,5 +1,5 @@
 .PHONY: bench-native bench-docker-build bench-docker test clean-docker-cache \
-        dev dev-docker-build dev-docker
+        dev dev-docker-build dev-docker serve fetch-models measure release
 
 # ---------------------------------------------------------------------------
 # Two-mode development (docs/PLAN.md). Mode A (native) is for fast iteration
@@ -61,11 +61,12 @@ clean-docker-cache:
 # Stage 0b+ API server
 # ---------------------------------------------------------------------------
 
-# Fast, exploratory. Uses MPS if available (Mode A) — fine for feeling
-# out the UI/API shape, but see the Mode A/B caveat at the top of this
-# file before trusting any number it produces.
+# Fast local iteration (Mode A). CPU, like the server: on Apple Silicon it
+# measured faster than MPS for every model here, and exact (D16). Run with
+# MI_DEVICE=mps to compare. See the Mode A/B caveat at the top of this file
+# before trusting any number it produces.
 dev:
-	MI_DEVICE=mps uv run uvicorn attnlab.api.app:app --reload --port 8000
+	MallocLargeCache=0 uv run uvicorn attnlab.api.app:app --reload --port 8000
 
 dev-docker-build:
 	docker build -f docker/Dockerfile.api -t attnlab-api .
@@ -82,3 +83,28 @@ dev-docker: dev-docker-build
 		-p 8000:8000 \
 		-v attnlab-hf-cache:/hf-cache \
 		attnlab-api
+
+# ---------------------------------------------------------------------------
+# Serving (docs/04-self-hosting.md, docs/06-releasing.md)
+# ---------------------------------------------------------------------------
+
+# The production configuration, on this machine: deploy/server.env, the
+# built frontend, one origin at http://127.0.0.1:8000. The closest thing to
+# the server you can run locally. Needs the models on disk (make fetch-models).
+serve:
+	cd web && npm run build
+	set -a && . deploy/server.env && set +a && \
+		uv run uvicorn attnlab.api.app:app --host 127.0.0.1 --port 8000 --workers 1
+
+# Download every model and tokenizer the server needs (only what fits the
+# server's budget; nothing is loaded into memory).
+fetch-models:
+	MI_RAM_BUDGET_GB=7 uv run python scripts/fetch_models.py
+
+# Measure a model before adding it to models.yaml: make measure MODEL=gpt2-small
+measure:
+	MallocLargeCache=0 MI_THREADS=6 uv run python scripts/measure_model.py $(MODEL)
+
+# Bump the version, tag, and print the push/deploy commands: make release V=0.2.0
+release:
+	scripts/release.sh $(V)

@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "default": {"format": "%(asctime)s %(levelname)s %(name)s: %(message)s"},
+    "access": {
+      "()": "uvicorn.logging.AccessFormatter",
+      "fmt": "%(asctime)s %(client_addr)s \"%(request_line)s\" %(status_code)s",
+      "use_colors": false
+    }
+  },
+  "handlers": {
+    "app": {
+      "class": "logging.handlers.RotatingFileHandler",
+      "formatter": "default",
+      "filename": "../../shared/logs/app.log",
+      "maxBytes": 20971520,
+      "backupCount": 5
+    },
+    "access": {
+      "class": "logging.handlers.RotatingFileHandler",
+      "formatter": "access",
+      "filename": "../../shared/logs/access.log",
+      "maxBytes": 20971520,
+      "backupCount": 5
+    }
+  },
+  "loggers": {
+    "attnlab": {"handlers": ["app"], "level": "INFO", "propagate": false},
+    "uvicorn": {"handlers": ["app"], "level": "INFO", "propagate": false},
+    "uvicorn.error": {"handlers": ["app"], "level": "INFO", "propagate": false},
+    "uvicorn.access": {"handlers": ["access"], "level": "INFO", "propagate": false}
+  },
+  "root": {"handlers": ["app"], "level": "WARNING"}
+}
