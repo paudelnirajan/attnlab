@@ -411,6 +411,13 @@ renders both.
 
 ## Stage 4 — Ship
 
+> **Update 2026-09-27.** The deploy target is decided (D19): the owner's MacBook Pro (M1 Pro,
+> 16 GB) at home, behind a Cloudflare Tunnel, not any of the hosts below. The hardening (caps, rate
+> limits, timeouts, offline model loading) and the deploy tooling are built and rehearsed. See
+> [`04-self-hosting.md`](04-self-hosting.md), [`05-server-setup.md`](05-server-setup.md) and
+> [`06-releasing.md`](06-releasing.md). What remains is the server setup itself, the load test from
+> outside, and the launch post.
+
 **Effort:** ~3–4 days.
 
 - Multi-stage `Dockerfile`: build frontend → python deps → `snapshot_download` the `tier: baked`

@@ -91,15 +91,18 @@ the plain-PyTorch notebook it was built from number for number (`tests/test_lens
 
 ```
 Browser (React + Vite + TS, canvas rendering)
-   │  fetch, same-origin via Vite's dev proxy
+   │  fetch, same-origin (Vite's dev proxy locally; in production the API
+   │  serves the built frontend itself, behind a Cloudflare Tunnel)
    ▼
-FastAPI backend (single uvicorn worker, one global semaphore)
+FastAPI backend (single uvicorn worker, one model slot, caps on everything)
    │
-   ├─ zoo.py        LRU model cache, enforced RAM budget, refuses rather than OOMs
+   ├─ zoo.py        LRU model cache; budgets each load's peak; refuses rather than OOMs
    ├─ inference.py  tokenize (via model.to_tokens) + run_with_cache (names_filter'd
    │                to attention patterns only) + per-token loss + top-k logits
    ├─ patterns.py   compress: triangle-pack → sqrt-compand → uint8 → ATNP binary
-   └─ api/          routes, request/response schemas, run cache (10 min TTL)
+   ├─ memory.py     the process's real memory footprint, for the memory guard
+   ├─ hub.py        model downloads ahead of time; offline loading
+   └─ api/          routes, guards (rate/body limits), bounded run stores (10 min TTL)
    │
    ▼
 HookedTransformer (TransformerLens, pinned 2.18.0 — matches ARENA's pin so
@@ -141,9 +144,9 @@ cd web && npm install && cd ..
 make dev
 ```
 
-This runs `uvicorn attnlab.api.app:app --reload --port 8000` with
-`MI_DEVICE=mps` (Apple Silicon acceleration for local iteration — see
-"Two modes" below). `--reload` restarts automatically on any source change.
+This runs `uvicorn attnlab.api.app:app --reload --port 8000` on the CPU (the
+default everywhere; faster than MPS for these models, see D16).
+`--reload` restarts automatically on any source change.
 
 **3. Start the frontend** (terminal 2):
 
@@ -162,7 +165,7 @@ configuration needed.
 
 ```bash
 curl http://localhost:8000/api/health
-# {"ok": true, "device": "mps", "budget": {...}, "resident_models": [...], ...}
+# {"ok": true, "ready": true, "version": "0.1.0", "device": "cpu", ...}
 ```
 
 ## Stopping it
@@ -181,7 +184,7 @@ constrained one.
 | | Mode A — `make dev` | Mode B — `make dev-docker` |
 |---|---|---|
 | Purpose | fast local iteration | **ground truth** — the numbers you'd actually get in a small, resource-capped deployment |
-| Device | `mps` | `cpu`, forced |
+| Device | `cpu` (`MI_DEVICE=mps` to compare) | `cpu`, forced |
 | Threads | all cores | 2 (`--cpus=2`, and `settings.py` forces torch to actually respect the container's CPU quota) |
 | Memory | none | `--memory=6g --memory-swap=6g` |
 | Frontend | still `npm run dev` in terminal 2 | still `npm run dev` in terminal 2 — the frontend isn't containerized yet |
@@ -221,18 +224,41 @@ a code change.
 | Attn-Only 2L | 54M | 2 × 8 | baked | ARENA 1.2's own induction-head demo model — no MLPs |
 | GPT-2 Small | 163M | 12 × 12 | baked | the ARENA default |
 | Pythia 160M | 162M | 12 × 12 | baked | EleutherAI, trained on the Pile |
-| GPT-2 Medium | 406M | 24 × 16 | lazy | fetched from the Hub on first use |
-| BLOOM 560M | 818M | 24 × 16 | lazy | 46-language multilingual probe; **RAM figure not yet verified in Mode B** — see the comment above its entry in `models.yaml` |
+| GPT-2 Medium | 406M | 24 × 16 | lazy | bigger composition structure |
+| Qwen3 0.6B (base) | 752M | 28 × 16 | lazy | a 2025 architecture (RMSNorm, rotary, grouped-query attention), 119 languages |
 
-"baked" models are meant to be pre-downloaded into a deploy image for instant
-cold starts; locally, both tiers download on first use into the same HF cache.
+Small models only: each has to load within the 16 GB server's 7 GB model budget,
+including the moment during a load when two copies of its weights exist. BLOOM
+560M was removed for that reason (8.6 GB while loading). Every number is measured
+with `make measure MODEL=<name>`; see the top of `models.yaml`.
+
+"baked" models load when the server starts; "lazy" ones on first use. Locally
+both download from the Hub on first use. The server never downloads while
+serving: a deploy fetches everything first (`make fetch-models`).
+
+## Deploying
+
+The production server is a MacBook Pro (M1 Pro, 16 GB) at home, behind a
+Cloudflare Tunnel, deployed with tagged releases:
+
+```bash
+make release V=0.2.0                           # on your dev machine: test, bump, tag
+git push origin main v0.2.0
+ssh <server> '~/attnlab/repo/deploy/deploy.sh v0.2.0'   # test, switch, verify, auto-rollback
+```
+
+- [`docs/04-self-hosting.md`](docs/04-self-hosting.md): how serving works and why, the options considered
+- [`docs/05-server-setup.md`](docs/05-server-setup.md): setting up the server Mac, step by step
+- [`docs/06-releasing.md`](docs/06-releasing.md): releasing, rolling back, and adding features safely
 
 ## Project layout
 
 ```
 src/attnlab/
-├── settings.py     env-driven config, the Mode A/B switch
+├── settings.py     env-driven config: device, every serving cap
 ├── zoo.py          LRU model cache with an enforced RAM budget
+├── memory.py       process memory footprint; returning freed memory
+├── hub.py          fetching model files; offline loading
 ├── inference.py    tokenization + forward pass + activation cache extraction
 ├── patterns.py     the ATNP binary compression format
 ├── registry.py     loads models.yaml
@@ -241,6 +267,10 @@ src/attnlab/
 ├── bench.py        benchmark driver
 └── api/
     ├── app.py, routes.py, schemas.py, state.py, errors.py, meta.py
+    └── guards.py   rate limit, body limit, security headers
+
+deploy/             server.env, deploy/rollback/status/watchdog scripts, launchd setup
+scripts/            measure_model.py, fetch_models.py, release.sh
 
 web/src/
 ├── api/            fetch client + binary (ATNP) decoder
@@ -253,7 +283,10 @@ docs/
 ├── PLAN.md              full build plan, stage-by-stage
 ├── 01-wire-format.md    the ATNP binary contract
 ├── 02-api.md            endpoint reference
-└── 03-decisions.md      running decision + bug log
+├── 03-decisions.md      running decision + bug log
+├── 04-self-hosting.md   how serving works, and why
+├── 05-server-setup.md   setting up the server Mac
+└── 06-releasing.md      releases, rollbacks, adding features
 ```
 
 ## Further reading

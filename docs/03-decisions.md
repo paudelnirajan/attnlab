@@ -9,7 +9,7 @@ that entry rather than starting a new document.
 
 ## D1 — Build to a 16 GB / 2 vCPU envelope; defer the deploy target
 
-**Status:** locked · **Revisit:** Stage 4
+**Status:** locked · **Deploy target decided 2026-09-27: a home Mac, see D19**
 
 Design and benchmark against the tightest realistic target (Hugging Face free CPU Basic: 2 vCPU,
 16 GB RAM, 50 GB non-persistent disk). Anything that fits there fits everywhere else.
@@ -150,7 +150,7 @@ a key, a rate limit, and an external dependency that can take the site down.
 | # | Item | Decide by | Notes |
 |---|---|---|---|
 | 1 | **Project name** — `attnlab` is a placeholder | before Stage 1 | After Stage 1 it's in the URL |
-| 2 | Deploy target | Stage 4 | D1; decided on real numbers |
+| 2 | ~~Deploy target~~ | decided | D19: the owner's M1 Pro, behind a Cloudflare Tunnel |
 | 3 | Live translation | v1.1 | D7; gated on 0a headroom |
 | 4 | CircuitsVis: fork, reuse, or write fresh | Stage 1 | Read its source first |
 | 5 | **Golden fixture** — run ARENA 1.2 yourself and capture its induction scores | Stage 2 | Blocks `tests/test_golden.py`; nobody else can produce this |
@@ -625,3 +625,176 @@ attribution.
 ' London' over ' Paris' (with BOS). The fact example says so rather than pick a prompt that flatters
 the model. On IOI, attribution recovers the published picture unprompted: L9H6 and L9H9 push toward
 ' Mary' by about +2.1 each, and L10H7 pushes back (−2.3), as the negative name mover.
+
+---
+
+## D16 — Serve on the CPU, not MPS
+
+**Status:** locked · **Measured:** 2026-09-27, Apple M4 Pro, float32
+
+The server Mac has Apple Silicon, so MPS was the obvious choice. Measured, it's the wrong one:
+
+| model | CPU, 512 tokens | MPS, 512 tokens |
+|---|---:|---:|
+| gpt2-small | 0.13 s | 0.94 s |
+| Qwen3-0.6B | 1.03 s | 1.21 s |
+
+At batch size 1 and a few hundred tokens, these models are too small for the GPU to pay for its
+launch and synchronisation costs, and `run_forward` reads many small results back (top-k per
+position). On top of speed, TransformerLens 2.18 warns that MPS "may produce silently incorrect
+results" on this PyTorch. That matters here: learners check our numbers against their Colab (D3).
+MPS memory also comes out of the same 16 GB, so it buys no capacity.
+
+**Decision.** `MI_DEVICE` defaults to `cpu` everywhere, `make dev` included. `MI_DEVICE=mps` still
+works for comparison. `MI_THREADS=6` on the server leaves 2 of the M1 Pro's 8 performance cores for
+macOS and cloudflared. On the M4 Pro, 6 threads were as fast as 12 for gpt2-small.
+
+**Revisit** if a model big enough for the GPU to win is ever added (unlikely on 16 GB, D21).
+
+---
+
+## D17 — Budget each model's load peak, and disable macOS's large-allocation cache
+
+**Status:** locked · **Measured:** 2026-09-27
+
+**Finding 1: the footprint was 2× the live tensors.** Qwen3-0.6B loaded showed 6.4 GB of physical
+footprint. Summing every live tensor gave 3.0 GB, exactly the parameters. `vmmap` put the
+difference in **"Malloc Large (empty)": 2.8 GB of memory already freed**, which macOS's allocator
+keeps mapped for reuse, still counted against the process. It comes from the load: TransformerLens
+holds the raw checkpoint and the processed weights side by side, then frees the raw copy.
+`malloc_zone_pressure_relief()` returned 0 bytes. Setting **`MallocLargeCache=0`** in the environment
+before the process starts brought the same load to **3.4 GB**. This is the same allocator retention
+D8 found, finally with a mechanism and a fix. The cost: gpt2-small's forward pass went from 0.13 s to
+0.25 s (fresh pages for large tensors each time), and Qwen's didn't change.
+
+**Finding 2: the load, not the steady state, is the peak.** Even with the fix, loading briefly needs
+both copies. So the peak is roughly twice the resident size (Qwen: 3.1 GB resident, 5.4 GB peak;
+BLOOM: 3.3 GB resident, 7.2 GB peak). The zoo admitted models on resident size alone, so it could
+start a load that pushed the machine into swap.
+
+**Decision.**
+- `models.yaml` gets `load_extra_mb` next to `est_ram_mb`. The zoo evicts until
+  `used + est_ram_mb + load_extra_mb` fits, and shows any model whose peak can't fit the budget as
+  disabled, with the numbers.
+- Both are measured by `scripts/measure_model.py` (macOS, CPU, `MallocLargeCache=0`, the process
+  base excluded), +10%. They replace the Docker-measured values, which included the ~350 MB process
+  base in every model. The server is a Mac now (D19), so macOS numbers are the ones that count.
+- `deploy/server.env` sets `MallocLargeCache=0`. The app logs a warning at startup if it's missing.
+- Eviction calls `memory.release()`. With the cache off, evicting Qwen returned the process to
+  969 MB (measured).
+
+**Rejected:** loading the checkpoint in bf16 to halve the raw copy. The fold/centre processing would
+then run in bf16, changing the numbers (D3).
+
+---
+
+## D18 — The server never downloads; deploys fetch exactly the needed files
+
+**Status:** locked
+
+Serving with `HF_HUB_OFFLINE=1` means no request ever waits on a download, a Hub outage can't
+break a model load, and the disk only grows when a deploy runs. `scripts/fetch_models.py` downloads
+before the switch. Two things were needed:
+
+1. **NeelNanda models couldn't load offline.** TransformerLens finds their checkpoint by *listing
+   the repo over the network*, even when the file is cached, so `attn-only-2l-demo` (the default
+   model) failed. `hub.install_cached_listing()` makes that listing read the local snapshot first.
+2. **Fetch only the files a load reads.** The first version used `*.pth` and pulled the NeelNanda
+   repo's 114 training checkpoints: **24 GB** for a 200 MB model (it was cleaned up the same day).
+   Patterns are now root-level only (`*/*` ignored), `*final.pth` for NeelNanda repos, and
+   tokenizer-only repos get tokenizer files only (pythia's tokenizer source, gpt-neox-20b, would
+   otherwise be a 40 GB repo). The patterns were checked against the real repo listings.
+
+---
+
+## D19 — Self-host on a home Mac: one process, one origin, a Cloudflare Tunnel
+
+**Status:** locked · **Supersedes:** D1's "defer the deploy target"
+
+The deploy target is the owner's MacBook Pro (M1 Pro, 16 GB, 256 GB) at home, on their domain.
+
+- **One process serves the site**, the API under `/api/*` and the built frontend for everything
+  else. The frontend and the API it calls always come from the same release, so a deploy can't
+  leave a new frontend talking to an old API. Hashed assets are sent `immutable`, so Cloudflare's
+  edge serves them and the Mac mostly sees API calls. `index.html` is `no-cache`, so releases reach
+  returning users.
+- **Cloudflare Tunnel, not port forwarding.** No open ports on the home router, the home IP stays
+  hidden, and TLS, DDoS protection and rate limiting come free. It still works behind CGNAT or a
+  changing IP. The API binds to 127.0.0.1 only.
+- **launchd** runs the API, the tunnel, a watchdog and `caffeinate` as the standard user's
+  LaunchAgents, so no admin rights are needed after the one-time setup.
+- **Releases are directories**, `releases/<tag>-<sha>/`, with a `current` symlink. A deploy builds,
+  fetches and tests while the old release serves, then swaps the link and restarts (~10 s). It rolls
+  back on its own if the new one isn't healthy within 3 minutes.
+
+**Rejected:**
+
+| Option | Why not |
+|---|---|
+| Frontend on Cloudflare Pages, API on the Mac | Two deploys that can disagree, plus CORS. `MI_CORS_ORIGINS` exists for it if it's ever wanted |
+| Router port forwarding + Let's Encrypt | Exposes the home IP and an open port; breaks behind CGNAT |
+| Docker on the Mac | Docker Desktop runs a Linux VM with its own fixed RAM slice (D1 amendment), which costs memory for nothing on a 16 GB machine |
+| Blue/green with two processes | Two copies of every model in 16 GB. ~10 s of downtime per release is the cheaper price |
+| GitHub Actions self-hosted runner for auto-deploy | On a public repo, anyone's pull request could run code on a home machine |
+
+---
+
+## D20 — Cap everything a request can make the server hold, and shed load early
+
+**Status:** locked · **Load-tested:** 2026-09-27
+
+A single worker already means one forward pass at a time (D6). What was missing is everything
+around it: unbounded run storage (float32, ~151 MB per gpt2-small run at 512 tokens, kept for
+10 min, no count limit), an unbounded queue, and a timeout that released the model slot while the
+timed-out thread was still running torch, so a second forward pass could run alongside it.
+
+| Cap | Where | Production value |
+|---|---|---|
+| Stored attention runs | encoded bytes (8× smaller), encoded during the forward pass | 512 MB |
+| Stored lens runs | bytes and count | 512 MB, 4 |
+| Waiting requests | model slot | 8, then 503 `busy` + `Retry-After` |
+| Request time | model slot; **the slot stays held until the thread finishes** | 30 s |
+| Process memory | checked before model work: drop runs, evict models (all of them if needed), refuse. With nothing left to free, exit so launchd restarts clean | 10.5 GB |
+| Watchdog | outside the process: restart if footprint > 12.5 GB or 3 failed health checks | every 60 s |
+| Clients | token bucket per `CF-Connecting-IP` over POST /api/* | 60 burst, 1/s |
+| Abandoned requests | skipped when their turn comes if the client is gone; the frontend aborts runs the prompt has superseded | — |
+| Input | body size; text characters before tokenizing | 256 KB; 10,000 |
+| Tokenizer lab | its own concurrency limit, outside the model slot | 2 |
+
+**Measured on the rehearsal deploy.** 20 simultaneous Qwen3 runs gave 9 served (1 running, 8 queued)
+and 11 instant 503s, all within 7.4 s. Of 6 abandoned requests, 5 were skipped without computing.
+A burst of 70 POSTs from one client gave 58 served and 12 × 429. With a deliberately low 3 GB memory
+limit, the guard evicted Qwen to serve a gpt2-small request and the footprint dropped to 969 MB.
+The first version kept one model resident, so a lone big model over the limit refused everything;
+that was fixed.
+
+Everything is an environment variable (`settings.py`), set in `deploy/server.env`, with defaults
+suited to a dev machine.
+
+---
+
+## D21 — Small models only; Qwen3-0.6B-Base added, BLOOM 560M removed
+
+**Status:** locked · **Owner's call, 2026-09-27**
+
+The zoo is for models that fit the 16 GB server comfortably: load peak within the 7 GB model budget.
+The owner asked for the bigger models to be removed outright rather than just auto-disabled.
+
+- **Removed: BLOOM 560M** (8.6 GB while loading; a 250k vocabulary and both embedding copies
+  during the load). Its tokenizer stays in the Tokenizer lab, and it's unlinked from the model.
+- **Added: `Qwen/Qwen3-0.6B-Base`** as `qwen3-0.6b` (lazy). It's the newest, smallest Qwen that
+  TransformerLens 2.18 supports. Qwen3.5-0.8B is newer but isn't in TL's table, and its hybrid
+  linear-attention layers have no attention pattern to show. Base rather than the chat model,
+  because the labs read next-token predictions on plain text. Verified end to end: " Kath" is its
+  top prediction for "The capital of Nepal is", and all five logit-lens anchor checks pass on
+  Nepali text. It encodes text identically to Qwen 2.5 (four extra special tokens), so the Tokenizer
+  lab's Qwen entry now links to it.
+- The zoo's auto-disable stays, as a safety net for mistakes, not as a way to list big models.
+
+---
+
+## Decision log (continued)
+
+| Date | Change |
+|---|---|
+| 2026-09-27 | D16–D21: self-hosting on the M1 Pro. CPU over MPS, load-peak budgeting and `MallocLargeCache=0`, offline serving, one-origin + Cloudflare Tunnel, caps on everything, small models only (Qwen3 in, BLOOM out). D1's deploy target decided. |

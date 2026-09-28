@@ -46,16 +46,27 @@ included **only** when the server runs with `MI_DEBUG_METRICS=1`.
 | `seq_too_long` | 422 | exceeds the model's `max_seq` |
 | `run_not_found` | 404 | run id unknown or TTL-expired |
 | `budget_exceeded` | 503 | model cannot be loaded within `MI_RAM_BUDGET_GB` |
-| `busy` | 503 | queue full / request timed out |
+| `busy` | 503 + `Retry-After` | `MI_MAX_QUEUE` requests already waiting, or the request passed `MI_REQUEST_TIMEOUT_S` |
+| `overloaded` | 503 + `Retry-After` | the memory guard couldn't get the process under `MI_MEMORY_LIMIT_GB` |
+| `text_too_long` | 422 | text over `MI_MAX_TEXT_CHARS`, checked before tokenizing |
+| `payload_too_large` | 413 | request body over `MI_MAX_BODY_BYTES` |
+| `rate_limited` | 429 + `Retry-After` | this client spent its `MI_RATE_BURST` POSTs; refills at `MI_RATE_PER_S` |
+| `client_gone` | 499 | the client disconnected while queued, so its request was skipped. Nobody sees this one; it's there for the access log |
+| `unreachable` | (frontend only) | a non-JSON error from a proxy, e.g. Cloudflare's 502 page while the server restarts |
 
 `budget_exceeded` is a deliberate, visible failure. The LRU **refuses** rather than swapping, so the
 ceiling is observable instead of manifesting as mysterious slowness.
 
 ### Limits
 
+Every cap and its production value is in `deploy/server.env`, explained in
+[`04-self-hosting.md`](04-self-hosting.md).
+
 - `max_seq` per model, enforced server-side; never trust the client
-- one forward pass at a time (`asyncio.Semaphore(1)`), torch runs in a thread executor
-- request timeout; per-IP rate limit added in Stage 4
+- one forward pass at a time (the model slot, `AppState.run_serialized`), torch in a thread executor
+- a queue cap, a request timeout, a per-client rate limit, a body size limit
+- stored runs are bounded by bytes (`MI_RUN_BUDGET_MB`, `MI_LENS_BUDGET_MB`) as well as the 10 min TTL.
+  A dropped run is `run_not_found`, and the frontend answers that by running again
 
 ---
 
@@ -190,13 +201,27 @@ Seeded `repeated` generation means a permalink reproduces the exact same random 
 ```json
 {
   "ok": true,
+  "ready": true,
+  "version": "0.2.0",
+  "revision": "a1b2c3d",
+  "uptime_s": 3600,
   "tl_version": "2.18.0",
   "device": "cpu",
-  "budget": {"limit_mb": 6144, "used_mb": 1540},
-  "resident_models": ["gpt2-small"],
-  "queue_depth": 0
+  "budget": {"limit_mb": 7168, "used_mb": 1700},
+  "resident_models": ["attn-only-2l-demo", "gpt2-small", "pythia-160m"],
+  "queue_depth": 0,
+  "memory": {"footprint_mb": 1844, "limit_mb": 10752, "runs": 3, "runs_mb": 21.4, "lens_runs": 1, "lens_runs_mb": 47.2},
+  "counters": {"busy": 0, "client_gone": 0, "timeouts": 0, "memory_guard": 0, "rate_limited": 0}
 }
 ```
+
+`ready` is false while `MI_PRELOAD` is still loading the baked models; `deploy/deploy.sh` waits for
+it, and for `revision` to match the commit it deployed. `counters` count since the process started.
+
+## `GET /api/version`
+
+`{"version": "0.2.0", "revision": "a1b2c3d"}`. The version is `pyproject.toml`'s; the revision is the
+deployed commit.
 
 ---
 
@@ -383,6 +408,7 @@ id out of range).
 | `POST /api/run` | 0b | JSON |
 | `GET /api/run/{id}/patterns` | 0b | **binary** |
 | `GET /api/health` | 0b | JSON |
+| `GET /api/version` | 4 | JSON |
 | `POST /api/head-scores` | 2 | JSON |
 | `POST /api/ablate` | 2 | JSON |
 | `POST /api/translate` | 3+ | JSON, deferred |
