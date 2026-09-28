@@ -66,6 +66,9 @@ export default function App() {
   const [openModal, setOpenModal] = useState<OpenModal>(null);
 
   const debouncedPrompt = useDebouncedValue(prompt, PROMPT_DEBOUNCE_MS);
+  // Bumped to run the same prompt again: a stored run can expire (10 min) or
+  // be dropped when the server restarts or needs the memory.
+  const [rerunNonce, setRerunNonce] = useState(0);
 
   // The [data-theme] stamp happens inside setThemeMode (see the store); this
   // only has to follow the OS while the mode is "system".
@@ -107,6 +110,10 @@ export default function App() {
       return;
     }
 
+    // A newer prompt replaces this run; aborting tells the server to skip it
+    // if it is still queued, instead of computing a result nobody will see.
+    const controller = new AbortController();
+
     tokenize(model, debouncedPrompt)
       .then((r) => fresh() && setTokenizeResult(r))
       .catch(() => {
@@ -118,18 +125,19 @@ export default function App() {
     // dimmed, until this one lands — otherwise the whole page empties out on
     // every debounced keystroke.
     beginRun();
-    runText(model, debouncedPrompt)
+    runText(model, debouncedPrompt, 5, controller.signal)
       .then((r) => {
         if (!fresh()) return;
         setRunResult(r);
         setError(null);
       })
       .catch((e) => {
-        if (!fresh()) return;
+        if (!fresh() || controller.signal.aborted) return;
         failRun();
         setError(errText(e));
       });
-  }, [model, debouncedPrompt, setTokenizeResult, beginRun, setRunResult, failRun, clearRun, setError]);
+    return () => controller.abort();
+  }, [model, debouncedPrompt, rerunNonce, setTokenizeResult, beginRun, setRunResult, failRun, clearRun, setError]);
 
   // --- fetch (and decode) patterns for the selected layer, prefetching its
   // neighbours (docs/PLAN.md: "Prefetch the neighbouring layer") ---
@@ -152,6 +160,15 @@ export default function App() {
           cachePatterns(layer, decodePatterns(buf));
         })
         .catch((e) => {
+          if (useStore.getState().runResult?.run_id !== runId) return;
+          if (e instanceof ApiError && e.code === "run_not_found") {
+            // Only once per run: every in-flight layer of it fails the same way.
+            if (!inflightRef.current.has(`${runId}:rerun`)) {
+              inflightRef.current.add(`${runId}:rerun`);
+              setRerunNonce((n) => n + 1);
+            }
+            return;
+          }
           if (layer === selectedLayer) setError(errText(e));
         })
         .finally(() => inflightRef.current.delete(key));
