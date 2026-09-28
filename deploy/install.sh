@@ -51,10 +51,29 @@ $2
 </plist>
 XML
   plutil -lint "$file" >/dev/null
-  launchctl bootout "$DOMAIN/$1" 2>/dev/null || true
-  launchctl bootstrap "$DOMAIN" "$file"
-  log "loaded $1"
+  # Reloading: bootout returns before launchd has finished removing the
+  # service, and bootstrapping over the remains fails with "5: Input/output
+  # error". Wait until it's really gone, then load, retrying briefly.
+  if launchctl print "$DOMAIN/$1" >/dev/null 2>&1; then
+    launchctl bootout "$DOMAIN/$1" 2>/dev/null || true
+    for _ in $(seq 1 100); do
+      launchctl print "$DOMAIN/$1" >/dev/null 2>&1 || break
+      sleep 0.1
+    done
+  fi
+  local tries
+  for tries in 1 2 3 4 5; do
+    launchctl bootstrap "$DOMAIN" "$file" 2>/dev/null && { log "loaded $1"; return 0; }
+    sleep 1
+  done
+  launchctl bootstrap "$DOMAIN" "$file" || true   # once more, showing launchd's error
+  die "could not load $1. Check: launchctl print $DOMAIN/$1 ; plutil -lint $file"
 }
+
+# LaunchAgents live in the user's login (GUI) session. Over SSH without the
+# user logged in at the Mac, that session doesn't exist.
+launchctl print "$DOMAIN" >/dev/null 2>&1 \
+  || die "no login session for $(id -un): log in at the Mac as $(id -un) (or turn on automatic login), then re-run"
 
 # The API runs whatever `current` points at, so a deploy only swaps the link.
 plist "$LABEL_API" "  <key>ProgramArguments</key><array><string>$CURRENT/deploy/run-api.sh</string></array>
