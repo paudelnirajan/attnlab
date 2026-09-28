@@ -44,17 +44,19 @@
   algorithm: byte-bpe
   year: 2022
   source: official
-  models: [bloom-560m]
+  models: []  # the model itself is too big for the 16 GB server (models.yaml)
   blurb: "250k-token vocabulary built for 46 natural languages."
 
 - id: qwen2.5
-  label: "Qwen 2.5"
+  label: "Qwen 2.5 / 3"
   hf_name: Qwen/Qwen2.5-0.5B
   algorithm: byte-bpe
   year: 2024
   source: official
-  models: []
-  blurb: "151k tokens, heavy on Chinese and code. Splits numbers into single digits."
+  # Qwen3 encodes text identically (checked 2026-09-27); it only adds four
+  # special tokens.
+  models: [qwen3-0.6b]
+  blurb: "151k tokens, heavy on Chinese and code. Splits numbers into single digits. Qwen3 uses the same one."
 
 - id: llama2
   label: "Llama 2 (TinyLlama)"

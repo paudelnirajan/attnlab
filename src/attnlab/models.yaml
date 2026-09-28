@@ -3,19 +3,25 @@
 # name outside of tests.
 #
 # tier:
-#   baked    - pre-downloaded into the deploy image; instant on cold start
-#   lazy     - pulled from the Hub on first request
-#   disabled - too large / gated / not ready; shown greyed-out with `reason`
+#   baked    - loaded at startup when MI_PRELOAD=1; instant for the first user
+#   lazy     - loaded on first request (weights are already on disk: the
+#              server runs offline and scripts/fetch_models.py downloads every
+#              enabled model at deploy time, D18)
+#   disabled - not ready; shown greyed-out with `reason`. A model whose
+#              load peak doesn't fit MI_RAM_BUDGET_GB is also refused and shown
+#              disabled, automatically (zoo.py) — a safety net, not a way to
+#              list big models.
 #
-# est_ram_mb: for the first four models below, this is now a MEASURED
-# number — Mode B (Docker, --cpus=2 --memory=6g, isolated subprocess per
-# model), from bench_results/RESULTS.md, 2026-09-19. It is
-# `net_rss_delta_mb`: resident memory for that model loaded FIRST in a
-# fresh process, which includes a one-time ~500-900MB transformers/
-# tokenizers import cost (see docs/03-decisions.md D8) on top of the
-# model's own weights. Deliberately conservative for LRU admission
-# (D8's amendment) — safer to overestimate than to repeat the OOM this
-# number's absence caused during Stage 0a benchmarking.
+# est_ram_mb / load_extra_mb: MEASURED with scripts/measure_model.py
+# (2026-09-27, Apple M4 Pro, CPU, float32, MallocLargeCache=0, 6 threads), +10%
+# and rounded up to 50 MB. est_ram_mb is what stays resident once loaded;
+# load_extra_mb is held on top of it only while loading (the raw checkpoint
+# and the processed copy side by side, D17). Neither includes the ~350 MB the
+# Python process itself costs, which is paid once. Memory transfers between
+# Apple Silicon Macs; re-measure before trusting these on Linux (glibc's
+# allocator behaves differently), and re-measure any model you add:
+#
+#   MallocLargeCache=0 uv run python scripts/measure_model.py <tl_name>
 
 - id: attn-only-2l-demo
   label: "Attn-Only 2L (ARENA 1.2)"
@@ -23,7 +29,8 @@
   tier: baked
   max_seq: 512
   languages: [en]
-  est_ram_mb: 757
+  est_ram_mb: 250
+  load_extra_mb: 250
   n_layers: 2
   n_heads: 8
   d_model: 512
@@ -36,7 +43,8 @@
   tier: baked
   max_seq: 512
   languages: [en]
-  est_ram_mb: 1671
+  est_ram_mb: 700
+  load_extra_mb: 700
   n_layers: 12
   n_heads: 12
   d_model: 768
@@ -49,7 +57,8 @@
   tier: baked
   max_seq: 512
   languages: [en]
-  est_ram_mb: 1641
+  est_ram_mb: 750
+  load_extra_mb: 650
   n_layers: 12
   n_heads: 12
   d_model: 768
@@ -62,32 +71,36 @@
   tier: lazy
   max_seq: 512
   languages: [en]
-  est_ram_mb: 3782
+  est_ram_mb: 1750
+  load_extra_mb: 950
   n_layers: 24
   n_heads: 16
   d_model: 1024
   n_params: 406236241
   blurb: "355M params, 24 layers. Larger induction/composition structure to explore."
 
-# bloom-560m: NOT Mode-B-verified. Its resident weight size alone
-# (~6.2GB, from a native/MPS isolated measurement) exceeds this dev
-# machine's real local Docker ceiling (6GB — Docker Desktop's VM here is
-# fixed at 7.7GB total, a systemwide setting left unchanged by choice;
-# see docs/03-decisions.md D1 amendment). tier stays `lazy` because that
-# is a PRODUCTION decision against the real deploy target's RAM, which
-# this dev machine cannot decide — but do not trust it in an actual
-# deployment until confirmed on a bigger box. Qwen2.5-0.5B (see
-# docs/PLAN.md Stage 3) is the safer default multilingual candidate
-# until then.
-- id: bloom-560m
-  label: "BLOOM 560M"
-  tl_name: bloom-560m
+# Deliberately small models only. Everything here must load within the 16 GB
+# server's MI_RAM_BUDGET_GB (7 GB) with room to spare. bloom-560m was removed
+# on 2026-09-27: it needs ~8.6 GB while loading (a 250k-token vocabulary). The
+# zoo still refuses any entry whose load peak exceeds the budget, as a safety
+# net, but don't add models that rely on it.
+
+# Qwen3-0.6B-Base: the newest, smallest Qwen that TransformerLens 2.18 supports.
+# (Qwen3.5 isn't in its model table, and its hybrid linear-attention layers
+# don't produce an attention pattern for most layers anyway.) Base rather than
+# the chat-tuned Qwen/Qwen3-0.6B, because the labs read next-token predictions
+# on plain text. n_params counts the embedding and unembedding separately:
+# TransformerLens unties them.
+- id: qwen3-0.6b
+  label: "Qwen3 0.6B (base)"
+  tl_name: Qwen/Qwen3-0.6B-Base
   tier: lazy
   max_seq: 512
-  languages: [en, fr, es, zh, ar, hi, pt, vi, "and 38 more"]
-  est_ram_mb: 6250  # native/MPS isolated measurement, NOT Mode B — see comment above
-  n_layers: 24
+  languages: [en, zh, es, fr, ar, hi, ne, ja, "and 111 more"]
+  est_ram_mb: 3400
+  load_extra_mb: 2650
+  n_layers: 28
   n_heads: 16
   d_model: 1024
-  n_params: 818363392
-  blurb: "46-language multilingual model. Used to probe cross-lingual tokenization and induction."
+  n_params: 751984000
+  blurb: "A 2025 model: 28 layers, RMSNorm, rotary positions, grouped-query attention, 119 languages."
