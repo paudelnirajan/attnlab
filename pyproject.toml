@@ -1,6 +1,6 @@
 [project]
 name = "attnlab"
-version = "0.2.0"
+version = "0.2.1"
 description = "Interactive attention/induction-head playground on TransformerLens"
 requires-python = ">=3.11,<3.12"
 dependencies = [
