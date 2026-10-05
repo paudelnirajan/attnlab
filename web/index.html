@@ -1,12 +1,54 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZBNCNLPS8G"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      // Report the path only: lab URLs carry the user's prompt in the query string.
+      gtag('config', 'G-ZBNCNLPS8G', { page_location: location.origin + location.pathname });
+    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>attnlab — attention pattern playground</title>
+    <title>attnlab: Attention, Tokenizer &amp; Logit Lens Playground</title>
+    <meta
+      name="description"
+      content="Explore tokenizers, attention heads and the logit lens on GPT-2, Pythia and Qwen3 in your browser. Free, open-source interpretability labs on TransformerLens."
+    />
+    <link rel="canonical" href="https://attnlab.sarvabhaum.ai/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="attnlab by Sarvabhaum AI" />
+    <meta property="og:url" content="https://attnlab.sarvabhaum.ai/" />
+    <meta property="og:title" content="attnlab: Attention, Tokenizer &amp; Logit Lens Playground" />
+    <meta
+      property="og:description"
+      content="Explore tokenizers, attention heads and the logit lens on GPT-2, Pythia and Qwen3 in your browser. Free, open-source interpretability labs on TransformerLens."
+    />
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "attnlab",
+        "url": "https://attnlab.sarvabhaum.ai/",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Any (web browser)",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "description": "Interactive labs for mechanistic interpretability: tokenizers, attention patterns and the logit lens on real TransformerLens models.",
+        "publisher": { "@type": "Organization", "name": "Sarvabhaum AI", "url": "https://sarvabhaum.ai" },
+        "sameAs": ["https://sarvabhaum.ai/tools/attnlab", "https://github.com/paudelnirajan/attnlab"]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      attnlab is an interactive playground for transformer interpretability and needs JavaScript.
+      Read about it at <a href="https://sarvabhaum.ai/tools/attnlab">sarvabhaum.ai/tools/attnlab</a>.
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

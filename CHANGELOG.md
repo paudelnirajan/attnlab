@@ -6,6 +6,11 @@ Versioning: docs/06-releasing.md.
 
 ## Unreleased
 
+### Added
+- **Google Analytics** on every page. Only the path is reported, never the prompt in the query string.
+- **Search metadata:** description, canonical URL, Open Graph tags and JSON-LD in `index.html`,
+  a title/description/canonical per live lab, plus `robots.txt` and `sitemap.xml`.
+
 ## 0.2.0 — 2026-09-27
 
 ### Added
